@@ -32,7 +32,7 @@ async function main() {
   log("MongoDB connected:", mongoose.connection.db.databaseName);
 
   /* ---------- wipe target collections ---------- */
-  const collections = ["users", "categories", "products", "inventorys", "recipes", "orders", "adminsettings", "dailynotes", "counters"];
+  const collections = ["users", "categories", "products", "inventories", "recipes", "orders", "adminsettings", "dailynotes", "counters", "otpcodes", "revokedtokens"];
   for (const c of collections) {
     await mongoose.connection.collection(c).deleteMany({});
   }
@@ -164,7 +164,11 @@ async function main() {
 
   /* ---------- counters ---------- */
   const maxOrderNo = orders.length ? Math.max(...orders.map((o) => o.id)) : 0;
-  await Counter.create({ key: "order", seq: maxOrderNo });
+  await Counter.findOneAndUpdate(
+    { key: "order" },
+    { $set: { seq: maxOrderNo } },
+    { upsert: true }
+  );
   log("order counter set to:", maxOrderNo);
 
   /* ---------- admin_settings ---------- */
