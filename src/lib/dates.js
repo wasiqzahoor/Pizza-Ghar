@@ -1,6 +1,7 @@
-/* Date helpers — server TZ aware (Asia/Karachi by default). */
-
-export const TZ = process.env.TZ || "Asia/Karachi";
+/* Date helpers — server TZ aware (Asia/Karachi by default).
+   Vercel sets TZ=":UTC" (reserved) — ignore colon-prefixed values. */
+const envTZ = process.env.TZ && !process.env.TZ.startsWith(":") ? process.env.TZ : "";
+export const TZ = envTZ || "Asia/Karachi";
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const MONTH_NAMES = [
