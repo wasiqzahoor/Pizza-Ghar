@@ -58,8 +58,10 @@ async function main() {
 
   /* ---------- categories ---------- */
   const [categories] = await mysqlConn.query("SELECT * FROM categories");
-  const catDocs = categories.map((c) => ({ name: c.name }));
+  const catDocs = categories.map((c) => ({ name: c.name, seq: Number(c.id) }));
   await Category.insertMany(catDocs);
+  const maxCatSeq = categories.reduce((m, c) => Math.max(m, Number(c.id) || 0), 0);
+  await Counter.updateOne({ key: "category" }, { $set: { seq: maxCatSeq } }, { upsert: true });
   log("categories:", categories.length);
 
   /* ---------- products ---------- */

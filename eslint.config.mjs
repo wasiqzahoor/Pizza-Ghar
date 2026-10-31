@@ -12,6 +12,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
   ]),
   {
+    files: ["**/*.{js,jsx,mjs,ts,tsx,mts,cts}"],
     rules: {
       // Legacy-ported pages: keep as warnings so lint stays green
       "react-hooks/refs": "warn",

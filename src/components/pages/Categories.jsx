@@ -150,7 +150,7 @@ Add
 
 <tr key={cat.id} className="border-b hover:bg-gray-50">
 
-<td className="p-3">{cat.id}</td>
+<td className="p-3">{cat.seq ?? cat.id}</td>
 
 <td className="p-3">{cat.name}</td>
 
