@@ -42,5 +42,7 @@ orderSchema.index({ billStatus: 1 });
 orderSchema.index({ deletedAt: 1 });
 orderSchema.index({ customerName: 1 });
 orderSchema.index({ customerPhone: 1 });
+orderSchema.index({ deletedAt: 1, created_at: 1 });
+orderSchema.index({ deletedAt: 1, orderNo: -1 });
 
 export const Order = mongoose.models.Order || mongoose.model("Order", orderSchema);

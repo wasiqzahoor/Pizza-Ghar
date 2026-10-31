@@ -7,22 +7,28 @@ import useAuthCheck from "@/hooks/useAuthCheck";
 import Pagination from "@/components/Pagination";
 import { showAlert, showConfirm } from "@/utils/popup";
 import { imgUrl } from "@/lib/img";
+import { useRef } from "react";
 
 const API = `${API_BASE}/api/products`;
 const CATEGORY_API = `${API_BASE}/api/categories`;
 
-export default function Menu() {
+export default function Menu({ initialProducts = null, initialCategoryNames = null }) {
 
   useAuthCheck();
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-  const [items, setItems] = useState([]);
-  const [categories, setCategories] = useState(["All"]);
+  const [items, setItems] = useState(() => initialProducts?.rows || []);
+  const [categories, setCategories] = useState(() =>
+    initialCategoryNames ? ["All", ...initialCategoryNames] : ["All"]
+  );
 
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState({ pages: 1, total: 0 });
+  const [pagination, setPagination] = useState({
+    pages: initialProducts?.pages || 1,
+    total: initialProducts?.total || 0,
+  });
 
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -88,8 +94,15 @@ export default function Menu() {
 
   };
 
+  const didInitCats = useRef(!initialCategoryNames);
+  const didInitProducts = useRef(!initialProducts);
+
   useEffect(()=>{
 
+    if (!didInitCats.current) {
+      didInitCats.current = true;
+      return;
+    }
     fetchCategories();
 
   },[]);
@@ -99,6 +112,10 @@ export default function Menu() {
   },[search, selectedCategory]);
 
   useEffect(()=>{
+    if (!didInitProducts.current) {
+      didInitProducts.current = true;
+      return;
+    }
     const t = setTimeout(
       ()=>fetchProducts(page, search, selectedCategory),
       search ? 300 : 0

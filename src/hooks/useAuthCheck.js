@@ -31,6 +31,7 @@ export default function useAuthCheck() {
       } catch (err) {
         showAlert("Session expired. Please login again.", "warning");
         localStorage.removeItem("token");
+        document.cookie = "pg_token=; path=/; max-age=0";
         router.replace("/");
       }
     };

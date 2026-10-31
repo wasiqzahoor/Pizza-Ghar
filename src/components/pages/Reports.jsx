@@ -1,7 +1,7 @@
 "use client";
 
 import { API_BASE } from "@/config/api";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   XAxis,
   YAxis,
@@ -17,7 +17,7 @@ import axios from "axios";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import { showAlert } from "@/utils/popup";
 
-export default function Reports() {
+export default function Reports({ initialStats = null, initialConsumption = null }) {
 
   useAuthCheck();
 
@@ -25,18 +25,22 @@ export default function Reports() {
 
   const [range, setRange] = useState("week");
 
-  const [stats, setStats] = useState({
-    totalRevenue: 0,
-    totalOrders: 0,
-    avgOrderValue: 0,
-    chart: [],
-    topItems: []
-  });
+  const [stats, setStats] = useState(() =>
+    initialStats || {
+      totalRevenue: 0,
+      totalOrders: 0,
+      avgOrderValue: 0,
+      chart: [],
+      topItems: [],
+    }
+  );
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  const [consumption, setConsumption] = useState([]);
+  const [consumption, setConsumption] = useState(() =>
+    initialConsumption || []
+  );
 
   const formatDate = (date) => {
     if (!date) return "";
@@ -126,8 +130,14 @@ export default function Reports() {
     await Promise.all([fetchReports(), fetchConsumption()]);
   };
 
+  const didInitialLoad = useRef(!(initialStats && initialConsumption));
+
   useEffect(() => {
     if (range === "custom" && (!startDate || !endDate)) return;
+    if (!didInitialLoad.current) {
+      didInitialLoad.current = true;
+      return;
+    }
 
     const delay = setTimeout(fetchAll, 500);
     return () => clearTimeout(delay);

@@ -1,22 +1,26 @@
 "use client";
 
 import { API_BASE } from "@/config/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import Pagination from "@/components/Pagination";
 import { Search, Eye, RotateCcw, X } from "lucide-react";
 import { showAlert, showConfirm } from "@/utils/popup";
+import { formatListDate, formatListTime } from "@/lib/dates";
 
-export default function OrderHistory() {
+export default function OrderHistory({ initialOrders = null }) {
   useAuthCheck(["admin"]);
 
   const API = `${API_BASE}/api`;
 
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState(() => initialOrders?.rows || []);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState({ pages: 1, total: 0 });
+  const [pagination, setPagination] = useState({
+    pages: initialOrders?.pages || 1,
+    total: initialOrders?.total || 0,
+  });
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(null);
 
@@ -53,7 +57,13 @@ export default function OrderHistory() {
     setPage(1);
   }, [search]);
 
+  const didInitialLoad = useRef(!initialOrders);
+
   useEffect(() => {
+    if (!didInitialLoad.current) {
+      didInitialLoad.current = true;
+      return;
+    }
     const t = setTimeout(
       () => loadOrders(page, search),
       search ? 300 : 0
@@ -160,15 +170,17 @@ export default function OrderHistory() {
                   <td className="p-4">{o.order_type}</td>
                   <td className="p-4">{o.customer_name}</td>
                   <td className="p-4">
-                    {new Date(o.created_at).toLocaleDateString()}
+                    {formatListDate(new Date(o.created_at))}
                     <br />
                     <span className="text-xs text-gray-400">
-                      {new Date(o.created_at).toLocaleTimeString()}
+                      {formatListTime(new Date(o.created_at))}
                     </span>
                   </td>
                   <td className="p-4 font-semibold">Rs {o.total}</td>
                   <td className="p-4 text-red-500">
-                    {o.deleted_at ? new Date(o.deleted_at).toLocaleString() : "-"}
+                    {o.deleted_at
+                      ? `${formatListDate(new Date(o.deleted_at))} ${formatListTime(new Date(o.deleted_at))}`
+                      : "-"}
                   </td>
                   <td className="p-4 flex gap-3 justify-center">
                     <button

@@ -175,15 +175,17 @@ export async function GET(req) {
       if (isValidDate(to)) filter.created_at.$lt = dayRange(to)[1];
     }
 
-    const total = await Order.countDocuments(filter);
-    const orders = await Order.find(filter)
-      .sort({ orderNo: -1 })
-      .skip(offset)
-      .limit(limit)
-      .select(
-        "orderNo customerName customerPhone deliveryAddress orderDescription orderType paymentMethod billStatus subtotal total cashReceived cashBack dueAmount status created_at deletedAt items"
-      )
-      .lean();
+    const [total, orders] = await Promise.all([
+      Order.countDocuments(filter),
+      Order.find(filter)
+        .sort({ orderNo: -1 })
+        .skip(offset)
+        .limit(limit)
+        .select(
+          "orderNo customerName customerPhone deliveryAddress orderDescription orderType paymentMethod billStatus subtotal total cashReceived cashBack dueAmount status created_at deletedAt items"
+        )
+        .lean(),
+    ]);
 
     return Response.json({
       rows: orders.map((o) => ({

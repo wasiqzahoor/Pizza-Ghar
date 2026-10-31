@@ -1,13 +1,17 @@
 "use client";
 
 import { API_BASE } from "@/config/api";
+import { useEffect, useState } from "react";
 import { User, LogOut } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function Topbar() {
   const router = useRouter();
 
-  const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
+  const [role, setRole] = useState(null);
+  useEffect(() => {
+    setRole(localStorage.getItem("role"));
+  }, []);
 
   const roleInfo = {
     admin: {
@@ -42,6 +46,7 @@ export default function Topbar() {
       console.log(error);
     }
     localStorage.clear();
+    document.cookie = "pg_token=; path=/; max-age=0";
     router.push("/login");
   };
 

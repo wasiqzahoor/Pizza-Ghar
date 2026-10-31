@@ -17,13 +17,17 @@ import {
   PanelLeftOpen,
   PanelLeftClose,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 export default function Sidebar({ closeSidebar, collapsed = false, onToggle }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
+  const [role, setRole] = useState(null);
+  useEffect(() => {
+    setRole(localStorage.getItem("role"));
+  }, []);
 
   const menuConfig = {
     admin: [
@@ -75,6 +79,7 @@ export default function Sidebar({ closeSidebar, collapsed = false, onToggle }) {
       console.log(error);
     }
     localStorage.clear();
+    document.cookie = "pg_token=; path=/; max-age=0";
     router.push("/");
   };
 

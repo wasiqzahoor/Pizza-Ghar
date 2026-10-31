@@ -16,13 +16,15 @@ import {
   ShoppingCart,
 } from "lucide-react";
 
-export default function POS() {
+export default function POS({ initialProducts, initialCategoryNames }) {
   useAuthCheck();
 
   /* ================= STATES ================= */
 
-  const [menuItems, setMenuItems] = useState([]);
-  const [categories, setCategories] = useState(["All"]);
+  const [menuItems, setMenuItems] = useState(initialProducts || []);
+  const [categories, setCategories] = useState(
+    initialCategoryNames ? ["All", ...initialCategoryNames] : ["All"]
+  );
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState([]);
@@ -50,11 +52,23 @@ export default function POS() {
 
   /* ================= LOAD PRODUCTS ================= */
 
+  const skipCatInit = useRef(Boolean(initialCategoryNames));
+
   useEffect(() => {
+    if (skipCatInit.current) {
+      skipCatInit.current = false;
+      return;
+    }
     loadCategories();
   }, []);
 
+  const skipProdInit = useRef(Boolean(initialProducts));
+
   useEffect(() => {
+    if (skipProdInit.current) {
+      skipProdInit.current = false;
+      return;
+    }
     const t = setTimeout(
       () => loadProducts(search, selectedCategory),
       search ? 300 : 0

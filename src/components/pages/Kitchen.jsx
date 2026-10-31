@@ -1,16 +1,16 @@
 "use client";
 
 import { API_BASE } from "@/config/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChefHat, Clock, CheckCircle } from "lucide-react";
 import axios from "axios";
 import Topbar from "@/components/Topbar";
 import useAuthCheck from "@/hooks/useAuthCheck";
 
-export default function Kitchen() {
+export default function Kitchen({ initialOrders }) {
   useAuthCheck();
 
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState(initialOrders || []);
 
   const API = `${API_BASE}/api/orders`;
 
@@ -33,8 +33,14 @@ export default function Kitchen() {
     }
   };
 
+  const skipInitial = useRef(Boolean(initialOrders));
+
   useEffect(() => {
-    fetchOrders();
+    if (skipInitial.current) {
+      skipInitial.current = false;
+    } else {
+      fetchOrders();
+    }
 
     const interval =
       setInterval(fetchOrders, 5000);

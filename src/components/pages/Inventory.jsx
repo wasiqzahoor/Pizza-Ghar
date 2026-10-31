@@ -1,22 +1,25 @@
 "use client";
 
 import { API_BASE } from "@/config/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { Search, Plus, Edit, Trash2, Filter } from "lucide-react";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import Pagination from "@/components/Pagination";
 import { showAlert, showConfirm } from "@/utils/popup";
 
-export default function Inventory() {
+export default function Inventory({ initialData = null }) {
   useAuthCheck();
 
   /* ================= STATES ================= */
 
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState(() => initialData?.rows || []);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState({ pages: 1, total: 0 });
+  const [pagination, setPagination] = useState({
+    pages: initialData?.pages || 1,
+    total: initialData?.total || 0,
+  });
 
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -31,16 +34,25 @@ export default function Inventory() {
 
   /* ================= ROLE ================= */
 
-  const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
+  const [role, setRole] = useState(null);
+  useEffect(() => {
+    setRole(localStorage.getItem("role"));
+  }, []);
   const isChef = role === "chef";
 
   /* ================= LOAD INVENTORY ================= */
+
+  const didInitialLoad = useRef(!initialData);
 
   useEffect(() => {
     setPage(1);
   }, [search]);
 
   useEffect(() => {
+    if (!didInitialLoad.current) {
+      didInitialLoad.current = true;
+      return;
+    }
     const t = setTimeout(
       () => loadInventory(page, search),
       search ? 300 : 0

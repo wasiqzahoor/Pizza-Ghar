@@ -1,15 +1,15 @@
 "use client";
 
 import { API_BASE } from "@/config/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Utensils, CheckCircle } from "lucide-react";
 import axios from "axios";
 import useAuthCheck from "@/hooks/useAuthCheck";
 
-export default function StatusBoard() {
+export default function StatusBoard({ initialOrders = null }) {
   useAuthCheck();
 
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState(() => initialOrders || []);
   const [search, setSearch] = useState("");
 
   const API = `${API_BASE}/api/orders`;
@@ -31,8 +31,14 @@ export default function StatusBoard() {
     }
   };
 
+  const didInitialLoad = useRef(!initialOrders);
+
   useEffect(() => {
-    fetchOrders();
+    if (!didInitialLoad.current) {
+      didInitialLoad.current = true;
+    } else {
+      fetchOrders();
+    }
     const interval = setInterval(fetchOrders, 5000);
     return () => clearInterval(interval);
   }, []);

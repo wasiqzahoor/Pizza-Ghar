@@ -44,12 +44,24 @@ export async function GET(req) {
       groupBy = (d) => dayName(d);
     }
 
-    const orders = await Order.find({
-      deletedAt: null,
-      created_at: { $gte: since, $lte: until },
-    })
-      .select("total created_at items")
-      .lean();
+    const match = { deletedAt: null, created_at: { $gte: since, $lte: until } };
+
+    const [orders, topAgg] = await Promise.all([
+      Order.find(match).select("total created_at").lean(),
+      Order.aggregate([
+        { $match: match },
+        { $unwind: "$items" },
+        {
+          $group: {
+            _id: "$items.name",
+            qty: { $sum: "$items.qty" },
+            total: { $sum: { $multiply: ["$items.qty", "$items.price"] } },
+          },
+        },
+        { $sort: { qty: -1 } },
+        { $limit: 5 },
+      ]),
+    ]);
 
     /* CHART */
     const chartMap = new Map();
@@ -68,20 +80,7 @@ export async function GET(req) {
     const avgOrderValue = Math.round(totalRevenue / (totalOrders || 1));
 
     /* TOP ITEMS */
-    const itemMap = new Map();
-    for (const o of orders) {
-      for (const it of o.items || []) {
-        const key = it.name;
-        if (!itemMap.has(key)) itemMap.set(key, { name: key, qty: 0, total: 0 });
-        const entry = itemMap.get(key);
-        entry.qty += it.qty || 0;
-        entry.total += (it.qty || 0) * (it.price || 0);
-      }
-    }
-    const topItems = [...itemMap.values()]
-      .sort((a, b) => b.qty - a.qty)
-      .slice(0, 5)
-      .map((t) => ({ id: t.name, ...t }));
+    const topItems = topAgg.map((t) => ({ id: t._id, name: t._id, qty: t.qty, total: t.total }));
 
     return Response.json({
       chart,

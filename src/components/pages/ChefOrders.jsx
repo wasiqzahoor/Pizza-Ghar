@@ -1,7 +1,7 @@
 "use client";
 
 import { API_BASE } from "@/config/api";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import {
   Printer,
@@ -13,10 +13,10 @@ import Topbar from "@/components/Topbar";
 import { showAlert } from "@/utils/popup";
 import { printAndClose } from "@/utils/printWindow";
 
-export default function ChefOrders() {
+export default function ChefOrders({ initialOrders = null }) {
    useAuthCheck();
 
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders] = useState(() => initialOrders || []);
   const [search, setSearch] = useState("");
   const [isPrinting, setIsPrinting] = useState(false);
 
@@ -38,8 +38,14 @@ export default function ChefOrders() {
     }
   };
 
+  const didInitialLoad = useRef(!initialOrders);
+
   useEffect(() => {
-    fetchOrders();
+    if (!didInitialLoad.current) {
+      didInitialLoad.current = true;
+    } else {
+      fetchOrders();
+    }
     const interval = setInterval(fetchOrders, 5000);
     return () => clearInterval(interval);
   }, []);

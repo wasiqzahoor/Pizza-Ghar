@@ -1,22 +1,25 @@
 "use client";
 
 import { API_BASE } from "@/config/api";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Plus, Trash2, Edit, Search } from "lucide-react";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import Pagination from "@/components/Pagination";
 import { showAlert, showConfirm } from "@/utils/popup";
 
-export default function AdminUsers() {
+export default function AdminUsers({ initialUsers = null }) {
   useAuthCheck();
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState(() => initialUsers?.rows || []);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("cashier");
   const [editingUser, setEditingUser] = useState(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState({ pages: 1, total: 0 });
+  const [pagination, setPagination] = useState({
+    pages: initialUsers?.pages || 1,
+    total: initialUsers?.total || 0,
+  });
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
@@ -36,11 +39,17 @@ export default function AdminUsers() {
     setPagination({ pages: data?.pages || 1, total: data?.total || 0 });
   };
 
+  const didInitialLoad = useRef(!initialUsers);
+
   useEffect(() => {
     setPage(1);
   }, [search]);
 
   useEffect(() => {
+    if (!didInitialLoad.current) {
+      didInitialLoad.current = true;
+      return;
+    }
     const t = setTimeout(
       () => fetchUsers(page, search),
       search ? 300 : 0

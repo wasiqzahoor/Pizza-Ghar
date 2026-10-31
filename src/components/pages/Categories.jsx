@@ -1,18 +1,18 @@
 "use client";
 
 import { API_BASE } from "@/config/api";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Plus, Trash2, Edit, X } from "lucide-react";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import { showAlert, showConfirm } from "@/utils/popup";
 
 const API = `${API_BASE}/api/categories`;
 
-export default function Categories(){
+export default function Categories({ initialCategories = null }){
 
     useAuthCheck();
 
-const [categories,setCategories] = useState([]);
+const [categories,setCategories] = useState(()=>initialCategories || []);
 const [name,setName] = useState("");
 
 const [showModal,setShowModal] = useState(false);
@@ -28,7 +28,13 @@ setCategories(data);
 
 };
 
+const didInitialLoad = useRef(!initialCategories);
+
 useEffect(()=>{
+if(!didInitialLoad.current){
+  didInitialLoad.current = true;
+  return;
+}
 fetchCategories();
 },[]);
 

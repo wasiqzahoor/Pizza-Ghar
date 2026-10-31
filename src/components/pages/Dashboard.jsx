@@ -1,7 +1,7 @@
 "use client";
 
 import { API_BASE } from "@/config/api";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import Topbar from "@/components/Topbar";
@@ -10,35 +10,44 @@ import RevenueChart from "@/components/RevenueChart";
 import useAuthCheck from "@/hooks/useAuthCheck";
 
 import {
-TrendingUp,
-ShoppingBag,
-AlertCircle,
-Users
+  TrendingUp,
+  ShoppingBag,
+  AlertCircle,
+  Users
 } from "lucide-react";
 
-export default function Dashboard(){
+const fmtChart = (chart) =>
+  (chart || []).map((item) => ({ name: item.label, revenue: item.total }));
+
+const defaultStats = {
+  totalSales:0,
+  totalOrders:0,
+  lowStockItems:0,
+  newCustomers:0,
+  recentOrders:[],
+  chart:[]
+};
+
+export default function Dashboard({ initialStats, initialConsumption }){
   useAuthCheck();
 
 const router = useRouter();
 
   const API = `${API_BASE}/api/dashboard`;
 
-const [loading,setLoading]=useState(true);
+const [loading,setLoading]=useState(!initialStats);
 
 const [range,setRange]=useState("daily");
 
 const [consumptionRange,setConsumptionRange]=useState("daily");
 
-const [consumption,setConsumption]=useState([]);
+const [consumption,setConsumption]=useState(initialConsumption || []);
 
-const [stats,setStats]=useState({
-totalSales:0,
-totalOrders:0,
-lowStockItems:0,
-newCustomers:0,
-recentOrders:[],
-chart:[]
-});
+const [stats,setStats]=useState(() =>
+  initialStats
+    ? { ...initialStats, chart: fmtChart(initialStats.chart) }
+    : defaultStats
+);
 
 const fetchDashboard=async()=>{
 
@@ -102,14 +111,26 @@ console.log(err);
 
 };
 
+const skipDashInit = useRef(Boolean(initialStats));
+
 useEffect(()=>{
 
+if (skipDashInit.current) {
+  skipDashInit.current = false;
+  return;
+}
 fetchDashboard();
 
 },[range]);
 
+const skipConsInit = useRef(Boolean(initialConsumption));
+
 useEffect(()=>{
 
+if (skipConsInit.current) {
+  skipConsInit.current = false;
+  return;
+}
 fetchConsumption();
 
 },[consumptionRange]);

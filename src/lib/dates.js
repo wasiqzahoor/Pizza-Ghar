@@ -103,3 +103,17 @@ export function formatKitchenTime(date) {
   h = h % 12 || 12;
   return `${String(h).padStart(2, "0")}:${p.minute} ${ampm}`;
 }
+
+/* Deterministic list/table date+time (same output on server & client) */
+export function formatListDate(date) {
+  const p = tzParts(date);
+  return `${p.day}/${p.month}/${p.year}`;
+}
+
+export function formatListTime(date) {
+  const p = tzParts(date);
+  let h = p.hour;
+  const ampm = h >= 12 ? "pm" : "am";
+  h = h % 12 || 12;
+  return `${h}:${p.minute} ${ampm}`;
+}

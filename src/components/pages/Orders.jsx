@@ -20,25 +20,53 @@ import useAuthCheck from "@/hooks/useAuthCheck";
 import Pagination from "@/components/Pagination";
 import { showAlert, showConfirm } from "@/utils/popup";
 import { printAndClose } from "@/utils/printWindow";
+import { formatListDate, formatListTime } from "@/lib/dates";
 
-export default function Orders() {
+const formatOrderRows = (rows) =>
+  rows.map((order) => {
+    const d = new Date(order.created_at);
+    return {
+      id: order.id,
+      type: order.order_type,
+      customer: order.customer_name,
+      billStatus: order.bill_status || "paid",
+      date: formatListDate(d),
+      time: formatListTime(d),
+      items: order.items,
+      total: order.total,
+      dueAmount: order.due_amount || 0,
+      status: order.status || "completed",
+      address: order.delivery_address || "",
+      customerPhone: order.customer_phone || "",
+    };
+  });
+
+export default function Orders({ initialOrders = null }) {
   useAuthCheck(["admin", "cashier"]);
 
   const router = useRouter();
 
-  const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
+  const [role, setRole] = useState(null);
+  useEffect(() => {
+    setRole(localStorage.getItem("role"));
+  }, []);
   const isChef = role === "chef";
   const isCashier = role === "cashier";
   const isAdmin = role == "admin";
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [ordersData, setOrdersData] = useState([]);
+  const [ordersData, setOrdersData] = useState(() =>
+    initialOrders?.rows ? formatOrderRows(initialOrders.rows) : []
+  );
   const [showModal, setShowModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [billFilter, setBillFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const [pagination, setPagination] = useState({ pages: 1, total: 0 });
+  const [pagination, setPagination] = useState({
+    pages: initialOrders?.pages || 1,
+    total: initialOrders?.total || 0,
+  });
   const [loading, setLoading] = useState(false);
   const [editBill, setEditBill] = useState(null);
   const [editBillStatus, setEditBillStatus] = useState("paid");
@@ -48,6 +76,8 @@ export default function Orders() {
   const [showBill, setShowBill] = useState(false);
   const [isPrinting, setIsPrinting] = useState(false);
 
+  const didInitialLoad = useRef(!initialOrders);
+
   const API = `${API_BASE}/api`;
 
   useEffect(() => {
@@ -55,6 +85,10 @@ export default function Orders() {
   }, [search, statusFilter, billFilter]);
 
   useEffect(() => {
+    if (!didInitialLoad.current) {
+      didInitialLoad.current = true;
+      return;
+    }
     const t = setTimeout(() => loadOrders(), search ? 300 : 0);
     return () => clearTimeout(t);
   }, [page, search, statusFilter, billFilter]);
@@ -89,27 +123,7 @@ export default function Orders() {
         }
       );
 
-      const formatted = res.data.rows.map(order => {
-        const d = new Date(order.created_at);
-
-        return {
-          id: order.id,
-          type: order.order_type,
-          customer: order.customer_name,
-          billStatus: order.bill_status || "paid",
-          date: d.toLocaleDateString(),
-          time: d.toLocaleTimeString(),
-          items: order.items,
-          total: order.total,
-          dueAmount: order.due_amount || 0,
-
-          status: order.status || "completed",
-          address: order.delivery_address || "",
-          customerPhone: order.customer_phone || "",
-        };
-      });
-
-      setOrdersData(formatted);
+      setOrdersData(formatOrderRows(res.data.rows));
       setPagination({ pages: res.data.pages, total: res.data.total });
     } catch (err) {
       console.log(err);
@@ -548,20 +562,20 @@ export default function Orders() {
   const statusBadge = status => {
     if (status === "completed")
       return (
-        <span className="bg-green-100 text-green-600 px-3 py-1 rounded-full text-xs flex items-center gap-1">
-          <CheckCircle size={14} /> Completed
+        <span className="bg-green-100 text-green-600 px-2 py-0.5 rounded-full text-[11px] flex items-center gap-1 w-fit whitespace-nowrap">
+          <CheckCircle size={12} /> Completed
         </span>
       );
 
     if (status === "preparing")
       return (
-        <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs flex items-center gap-1">
-          <Clock size={14} /> Preparing
+        <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full text-[11px] flex items-center gap-1 w-fit whitespace-nowrap">
+          <Clock size={12} /> Preparing
         </span>
       );
 
     return (
-      <span className="bg-purple-100 text-purple-600 px-3 py-1 rounded-full text-xs">
+      <span className="bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full text-[11px] w-fit whitespace-nowrap">
         Ready
       </span>
     );
@@ -628,21 +642,21 @@ export default function Orders() {
 
         </div>
 
-        <div className="overflow-x-auto border rounded-xl">
-          <table className="w-full min-w-[1150px] text-sm">
+        <div className="border rounded-xl overflow-hidden">
+          <table className="w-full text-xs">
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">ORDER ID</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">TYPE</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">CUSTOMER</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">ADDRESS</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">DATE</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">ITEMS</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">TOTAL</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600 whitespace-nowrap">DUE</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">BILL</th>
-                <th className="px-4 py-3 text-left font-semibold text-gray-600">STATUS</th>
-                <th className="px-4 py-3 text-center font-semibold text-gray-600 whitespace-nowrap">ACTIONS</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wide">Order ID</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wide">Type</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wide">Customer</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wide">Address</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wide">Date</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wide">Items</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wide">Total</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wide">Due</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wide">Bill</th>
+                <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wide">Status</th>
+                <th className="px-2 py-2 text-center font-semibold text-gray-600 uppercase tracking-wide">Actions</th>
               </tr>
             </thead>
 
@@ -666,28 +680,36 @@ export default function Orders() {
               {ordersData.map(order => (
                 <tr key={order.id} className="border-t hover:bg-gray-50">
 
-                  <td className="px-4 py-3 font-semibold whitespace-nowrap">#{order.id}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">{order.type}</td>
-                  <td className="px-4 py-3 whitespace-nowrap">{order.customer}</td>
+                  <td className="px-2 py-2 font-semibold whitespace-nowrap">#{order.id}</td>
+                  <td className="px-2 py-2 whitespace-nowrap">{order.type}</td>
+                  <td
+                    className="px-2 py-2 max-w-[95px] truncate"
+                    title={order.customer || ""}
+                  >
+                    {order.customer}
+                  </td>
 
-                  <td className="px-4 py-3 max-w-[180px] truncate" title={order.address || ""}>
+                  <td
+                    className="px-2 py-2 max-w-[90px] truncate"
+                    title={order.address || ""}
+                  >
                     {order.address || "-"}
                   </td>
 
-                  <td className="px-4 py-3 whitespace-nowrap">
+                  <td className="px-2 py-2 whitespace-nowrap leading-tight">
                     {order.date}
                     <br />
-                    <span className="text-xs text-gray-400">{order.time}</span>
+                    <span className="text-[11px] text-gray-400">{order.time}</span>
                   </td>
 
-                  <td className="px-4 py-3 text-center">{order.items}</td>
-                  <td className="px-4 py-3 font-semibold whitespace-nowrap">Rs {order.total}</td>
-                  <td className="px-4 py-3 font-semibold text-red-500 whitespace-nowrap">
+                  <td className="px-2 py-2 text-center">{order.items}</td>
+                  <td className="px-2 py-2 font-semibold whitespace-nowrap">Rs {order.total}</td>
+                  <td className="px-2 py-2 font-semibold text-red-500 whitespace-nowrap">
                     Rs {order.dueAmount}
                   </td>
 
-                  <td className="px-4 py-3">
-                    <span className={`px-3 py-1 rounded-full text-xs whitespace-nowrap ${
+                  <td className="px-2 py-2">
+                    <span className={`px-2 py-0.5 rounded-full text-[11px] whitespace-nowrap ${
                       order.billStatus === "paid"
                         ? "bg-green-100 text-green-600"
                         : "bg-red-100 text-red-600"
@@ -696,19 +718,19 @@ export default function Orders() {
                     </span>
                   </td>
 
-                  <td className="px-4 py-3">{statusBadge(order.status)}</td>
+                  <td className="px-2 py-2">{statusBadge(order.status)}</td>
 
-                  <td className="px-4 py-3">
-                    <div className="flex gap-2.5 justify-center items-center">
+                  <td className="px-2 py-2">
+                    <div className="flex gap-1.5 justify-center items-center">
                       <Eye
-                        size={17}
+                        size={15}
                         className="cursor-pointer hover:text-blue-600"
                         onClick={() => handleView(order.id)}
                       />
 
                       {(isChef || isCashier || isAdmin) && (
                         <Printer
-                          size={17}
+                          size={15}
                           className="cursor-pointer hover:text-orange-600"
                           onClick={() => handlePrint(order.id)}
                         />
@@ -716,7 +738,7 @@ export default function Orders() {
 
                       {(isCashier || isAdmin) && (
                         <Edit
-                          size={17}
+                          size={15}
                           className="cursor-pointer hover:text-green-600"
                           onClick={() => handleEdit(order)}
                         />
@@ -724,7 +746,7 @@ export default function Orders() {
 
                       {(isCashier || isAdmin) && (
                         <Edit3
-                          size={17}
+                          size={15}
                           className="cursor-pointer text-blue-600"
                           onClick={() => handleModify(order.id)}
                         />
@@ -732,7 +754,7 @@ export default function Orders() {
 
                       {isAdmin && (
                         <Trash2
-                          size={17}
+                          size={15}
                           className="cursor-pointer text-red-500 hover:text-red-700"
                           onClick={() => handleDelete(order.id)}
                         />

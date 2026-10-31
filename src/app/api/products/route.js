@@ -23,12 +23,14 @@ export async function GET(req) {
     const category = (new URL(req.url).searchParams.get("category") || "").trim();
     if (category && category !== "All") filter.category = category;
 
-    const total = await Product.countDocuments(filter);
-    const rows = await Product.find(filter)
-      .sort({ _id: -1 })
-      .skip(offset)
-      .limit(limit)
-      .lean();
+    const [total, rows] = await Promise.all([
+      Product.countDocuments(filter),
+      Product.find(filter)
+        .sort({ _id: -1 })
+        .skip(offset)
+        .limit(limit)
+        .lean(),
+    ]);
 
     return Response.json({
       rows: rows.map((r) => ({

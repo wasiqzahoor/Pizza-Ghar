@@ -68,6 +68,7 @@ function LoginInner() {
       localStorage.setItem("user_id", data.user.id);
       localStorage.setItem("email", data.user.email);
       localStorage.setItem("token_expiry", expiry);
+      document.cookie = `pg_token=${data.token}; path=/; max-age=86400; SameSite=Lax`;
 
       router.push(`/${data.user.role}/dashboard`);
     } catch (err) {

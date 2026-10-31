@@ -1,19 +1,19 @@
 "use client";
 
 import { API_BASE } from "@/config/api";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import { KeyRound, History, StickyNote, Save, Pencil, Trash2 } from "lucide-react";
 import { showAlert, showConfirm } from "@/utils/popup";
 
-export default function AdminSettings() {
+export default function AdminSettings({ initialNotes = null }) {
   useAuthCheck();
 
   const router = useRouter();
 
   const [note, setNote] = useState("");
-  const [notes, setNotes] = useState([]);
+  const [notes, setNotes] = useState(() => initialNotes || []);
   const [editId, setEditId] = useState(null);
 
   const fetchNotes = async () => {
@@ -26,7 +26,13 @@ export default function AdminSettings() {
     }
   };
 
+  const didInitialLoad = useRef(!initialNotes);
+
   useEffect(() => {
+    if (!didInitialLoad.current) {
+      didInitialLoad.current = true;
+      return;
+    }
     fetchNotes();
   }, []);
 

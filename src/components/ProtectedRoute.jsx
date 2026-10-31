@@ -5,22 +5,20 @@ import { useRouter } from "next/navigation";
 
 export default function ProtectedRoute({ children, allowedRole }) {
   const router = useRouter();
-  // false on server AND on first client render → no hydration mismatch
-  const [authorized, setAuthorized] = useState(false);
+  // null on server AND first client render → children SSR'd with data (no hydration mismatch)
+  const [blocked, setBlocked] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     const role = localStorage.getItem("role");
 
     if (!token || role !== allowedRole) {
+      setBlocked(true);
       router.replace("/");
-      return;
     }
-
-    setAuthorized(true);
   }, [allowedRole, router]);
 
-  if (!authorized) return null;
+  if (blocked) return null;
 
   return children;
 }

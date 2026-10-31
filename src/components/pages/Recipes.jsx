@@ -1,24 +1,27 @@
 "use client";
 
 import { API_BASE } from "@/config/api";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import Pagination from "@/components/Pagination";
 import { showAlert, showConfirm } from "@/utils/popup";
 
-export default function Recipes(){
+export default function Recipes({ initialProducts = null, initialInventory = null, initialRecipes = null }){
   useAuthCheck();
 
 const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-const [products,setProducts]=useState([]);
-const [inventory,setInventory]=useState([]);
-const [recipes,setRecipes]=useState([]);
+const [products,setProducts]=useState(()=>initialProducts || []);
+const [inventory,setInventory]=useState(()=>initialInventory || []);
+const [recipes,setRecipes]=useState(()=>initialRecipes?.rows || []);
 
 const [search,setSearch]=useState("");
 const [page,setPage]=useState(1);
-const [pagination,setPagination]=useState({pages:1,total:0});
+const [pagination,setPagination]=useState({
+  pages:initialRecipes?.pages || 1,
+  total:initialRecipes?.total || 0
+});
 
 const [productId,setProductId]=useState("");
 
@@ -94,8 +97,15 @@ setProductId(id)
 
 /* INIT */
 
+const didInitLookups=useRef(!initialProducts || !initialInventory);
+const didInitRecipes=useRef(!initialRecipes);
+
 useEffect(()=>{
 
+if(!didInitLookups.current){
+  didInitLookups.current=true;
+  return;
+}
 loadProducts()
 loadInventory()
 
@@ -109,6 +119,10 @@ setPage(1)
 
 useEffect(()=>{
 
+if(!didInitRecipes.current){
+  didInitRecipes.current=true;
+  return;
+}
 const t=setTimeout(
 ()=>loadRecipes(page,search),
 search ? 300 : 0
