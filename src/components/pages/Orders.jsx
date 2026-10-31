@@ -642,8 +642,8 @@ export default function Orders({ initialOrders = null }) {
 
         </div>
 
-        <div className="border rounded-xl overflow-hidden">
-          <table className="w-full text-xs">
+        <div className="border rounded-xl overflow-x-auto">
+          <table className="w-full min-w-[960px] text-xs">
             <thead className="bg-gray-50 sticky top-0 z-10">
               <tr>
                 <th className="px-2 py-2 text-left font-semibold text-gray-600 uppercase tracking-wide">Order ID</th>
