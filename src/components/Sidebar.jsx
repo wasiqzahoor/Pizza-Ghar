@@ -105,23 +105,15 @@ export default function Sidebar({ closeSidebar, collapsed = false, onToggle }) {
         }`}
       >
         {collapsed ? (
-          <img
-            src="/logo.jpeg"
-            alt="Pizza Ghar"
-            className="w-10 h-10 object-contain rounded shrink-0 bg-white p-0.5"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
-          />
+          <span className="text-red-500 font-extrabold text-[11px] leading-tight text-center shrink-0 select-none">
+            PIZZA
+            <br />
+            GHAR
+          </span>
         ) : (
-          <img
-            src="/logo.jpeg"
-            alt="Pizza Ghar"
-            className="h-14 min-w-0 flex-1 object-contain"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
-          />
+          <span className="text-red-500 font-extrabold text-xl tracking-wide truncate select-none">
+            PIZZA GHAR
+          </span>
         )}
 
         {onToggle && (
