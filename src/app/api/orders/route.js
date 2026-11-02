@@ -167,6 +167,9 @@ export async function GET(req) {
     const billStatus = (sp.get("billStatus") || "").trim();
     if (billStatus && billStatus !== "all") filter.billStatus = billStatus;
 
+    const orderType = (sp.get("orderType") || "").trim();
+    if (orderType && orderType !== "all") filter.orderType = orderType;
+
     const from = (sp.get("from") || "").trim();
     const to = (sp.get("to") || "").trim();
     if (isValidDate(from) || isValidDate(to)) {

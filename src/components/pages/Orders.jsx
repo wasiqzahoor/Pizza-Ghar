@@ -62,6 +62,7 @@ export default function Orders({ initialOrders = null }) {
   const [showModal, setShowModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [billFilter, setBillFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({
     pages: initialOrders?.pages || 1,
@@ -82,7 +83,7 @@ export default function Orders({ initialOrders = null }) {
 
   useEffect(() => {
     setPage(1);
-  }, [search, statusFilter, billFilter]);
+  }, [search, statusFilter, billFilter, typeFilter]);
 
   useEffect(() => {
     if (!didInitialLoad.current) {
@@ -91,7 +92,7 @@ export default function Orders({ initialOrders = null }) {
     }
     const t = setTimeout(() => loadOrders(), search ? 300 : 0);
     return () => clearTimeout(t);
-  }, [page, search, statusFilter, billFilter]);
+  }, [page, search, statusFilter, billFilter, typeFilter]);
 
   const handleModify = (id) => {
     const role = localStorage.getItem("role");
@@ -113,6 +114,7 @@ export default function Orders({ initialOrders = null }) {
       if (search.trim()) params.set("q", search.trim());
       if (statusFilter !== "all") params.set("status", statusFilter);
       if (billFilter !== "all") params.set("billStatus", billFilter);
+      if (typeFilter !== "all") params.set("orderType", typeFilter);
 
       const res = await axios.get(
         `${API}/orders?${params.toString()}`,
@@ -585,6 +587,23 @@ export default function Orders({ initialOrders = null }) {
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
+          </div>
+
+          {/* ORDER TYPE FILTER BUTTONS */}
+          <div className="flex gap-2">
+            {["Dine In", "Take Away", "Delivery"].map((t) => (
+              <button
+                key={t}
+                onClick={() => setTypeFilter(typeFilter === t ? "all" : t)}
+                className={`px-4 py-2 rounded-lg text-sm transition ${
+                  typeFilter === t
+                    ? "bg-orange-500 text-white"
+                    : "bg-gray-200 hover:bg-gray-300"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
           </div>
 
           {/* BILL FILTER BUTTONS */}
