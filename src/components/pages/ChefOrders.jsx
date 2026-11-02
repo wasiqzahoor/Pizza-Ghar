@@ -11,7 +11,7 @@ import {
 import axios from "axios";
 import Topbar from "@/components/Topbar";
 import { showAlert } from "@/utils/popup";
-import { printAndClose } from "@/utils/printWindow";
+import { printHtml } from "@/utils/printWindow";
 
 export default function ChefOrders({ initialOrders = null }) {
    useAuthCheck();
@@ -101,16 +101,9 @@ const handlePrint = (order) => {
   const totalQty = order.items?.reduce((a, b) => a + b.qty, 0) || 0;
   const totalItems = order.items?.length || 0;
 
-  const win = window.open("", "_blank", "width=320,height=700");
-
-  if (!win) {
-    showAlert("Popup blocked! Please allow popups.", "warning");
-    return;
-  }
-
   setIsPrinting(true);
 
-  win.document.write(`<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html>
 <head>
   <title>PizzaGhar Receipt</title>
@@ -190,11 +183,9 @@ const handlePrint = (order) => {
   </div>
 
 </body>
-</html>`);
+</html>`;
 
-  win.document.close();
-
-  printAndClose(win, () => setIsPrinting(false));
+  printHtml(html, () => setIsPrinting(false));
 };
 
   return (

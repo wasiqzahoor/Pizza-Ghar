@@ -13,7 +13,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { showAlert } from "@/utils/popup";
-import { printAndClose } from "@/utils/printWindow";
+import { printHtml } from "@/utils/printWindow";
 
 export default function EditPOS() {
 
@@ -300,15 +300,7 @@ export default function EditPOS() {
     const totalQty = data.items.reduce((a, b) => a + b.qty, 0);
     const totalItems = data.items.length;
 
-    const win = window.open("", "_blank", "width=320,height=700");
-
-    if (!win) {
-      showAlert("Popup blocked! Please allow popups.", "warning");
-      setIsPrinting(false);
-      return;
-    }
-
-    win.document.write(`<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html>
 <head>
   <title>PizzaGhar Receipt</title>
@@ -446,11 +438,9 @@ export default function EditPOS() {
   </div>
 
 </body>
-</html>`);
+</html>`;
 
-    win.document.close();
-
-    printAndClose(win, async (result) => {
+    printHtml(html, async (result) => {
       setIsPrinting(false);
       if (result && result.ok === false) return; /* print failed → keep pending */
 
@@ -524,15 +514,7 @@ export default function EditPOS() {
     const totalQty = data.items.reduce((a, b) => a + b.qty, 0);
     const totalItems = data.items.length;
 
-    const win = window.open("", "_blank", "width=320,height=700");
-
-    if (!win) {
-      showAlert("Popup blocked! Please allow popups.", "warning");
-      setIsPrinting(false);
-      return;
-    }
-
-    win.document.write(`<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html>
 <head>
   <title>PizzaGhar Kitchen Slip</title>
@@ -613,11 +595,9 @@ export default function EditPOS() {
   </div>
 
 </body>
-</html>`);
+</html>`;
 
-    win.document.close();
-
-    printAndClose(win, () => setIsPrinting(false));
+    printHtml(html, () => setIsPrinting(false));
   };
 
   /* ================= FILTER ================= */

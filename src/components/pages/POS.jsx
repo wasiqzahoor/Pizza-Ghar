@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import { showAlert } from "@/utils/popup";
-import { printAndClose } from "@/utils/printWindow";
+import { printHtml } from "@/utils/printWindow";
 import { imgUrl } from "@/lib/img";
 
 import {
@@ -256,15 +256,7 @@ setOrderType("Dine In");
     const totalQty = data.items.reduce((a, b) => a + b.qty, 0);
     const totalItems = data.items.length;
 
-    const win = window.open("", "_blank", "width=320,height=700");
-
-    if (!win) {
-      showAlert("Popup blocked! Please allow popups.", "warning");
-      setIsPrinting(false);
-      return;
-    }
-
-    win.document.write(`<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html>
 <head>
   <title>PizzaGhar Receipt</title>
@@ -400,12 +392,9 @@ setOrderType("Dine In");
   </div>
 
 </body>
-</html>`);
+</html>`;
 
-    win.document.close();
-
-    // ✅ print runs inside the popup — main app never freezes
-    printAndClose(win, async (result) => {
+    printHtml(html, async (result) => {
       setIsPrinting(false);
       if (result && result.ok === false) return; /* print failed → keep pending */
 
@@ -472,15 +461,7 @@ setOrderType("Dine In");
     const totalQty = data.items.reduce((a, b) => a + b.qty, 0);
     const totalItems = data.items.length;
 
-    const win = window.open("", "_blank", "width=320,height=700");
-
-    if (!win) {
-      showAlert("Popup blocked! Please allow popups.", "warning");
-      setIsPrinting(false);
-      return;
-    }
-
-    win.document.write(`<!DOCTYPE html>
+    const html = `<!DOCTYPE html>
 <html>
 <head>
   <title>PizzaGhar Kitchen Slip</title>
@@ -561,12 +542,9 @@ setOrderType("Dine In");
   </div>
 
 </body>
-</html>`);
+</html>`;
 
-    win.document.close();
-
-    // ✅ print runs inside the popup — main app never freezes
-    printAndClose(win, () => setIsPrinting(false));
+    printHtml(html, () => setIsPrinting(false));
   };
 
   /* ================= FILTER ================= */

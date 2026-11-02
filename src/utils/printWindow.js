@@ -74,3 +74,101 @@ export function printAndClose(win, onDone) {
     }, 400);
   }, 300);
 }
+
+/* Print an HTML receipt without worrying about popup blockers:
+   1. tries a popup first (app stays responsive while the dialog is open)
+   2. if the popup is blocked/fails → hidden same-origin iframe fallback
+      (works everywhere; page may pause while the print dialog is open) */
+export function printHtml(html, onDone) {
+  let win = null;
+  try {
+    win = window.open("", "_blank", "width=320,height=700");
+  } catch (err) {
+    win = null;
+  }
+
+  if (win) {
+    try {
+      win.document.write(html);
+      win.document.close();
+      printAndClose(win, onDone);
+      return;
+    } catch (err) {
+      console.error("Popup write error:", err);
+      try {
+        win.close();
+      } catch (e) {
+        /* ignore */
+      }
+    }
+  }
+
+  printIframe(html, onDone);
+}
+
+function printIframe(html, onDone) {
+  let finished = false;
+  let iframe = null;
+
+  const finish = (ok) => {
+    if (finished) return;
+    finished = true;
+    if (iframe) {
+      try {
+        setTimeout(() => iframe.remove(), 500);
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    if (typeof onDone === "function") onDone({ ok: ok !== false });
+  };
+
+  try {
+    iframe = document.createElement("iframe");
+    iframe.setAttribute("aria-hidden", "true");
+    iframe.style.cssText =
+      "position:fixed;left:-10000px;top:0;width:80mm;height:120mm;border:0;";
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentDocument || iframe.contentWindow.document;
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    const win = iframe.contentWindow;
+    let printed = false;
+    const doPrint = () => {
+      if (printed || finished) return;
+      printed = true;
+      try {
+        win.onafterprint = () => finish(true);
+        win.focus();
+        win.print();
+      } catch (err) {
+        console.error("Print error:", err);
+        finish(false);
+        return;
+      }
+      /* fallback if the browser never fires afterprint (main thread is
+         blocked while the dialog is open, so this only runs after close) */
+      setTimeout(() => finish(true), 20000);
+    };
+
+    /* wait for receipt images (logo) so they appear on paper */
+    const imgs = Array.from(doc.images || []);
+    Promise.all(
+      imgs.map((im) =>
+        im.complete
+          ? true
+          : new Promise((res) => {
+              im.onload = res;
+              im.onerror = res;
+            })
+      )
+    ).then(() => setTimeout(doPrint, 150));
+    setTimeout(doPrint, 3000);
+  } catch (err) {
+    console.error("Print error:", err);
+    finish(false);
+  }
+}
