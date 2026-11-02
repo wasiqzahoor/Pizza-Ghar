@@ -229,11 +229,7 @@ export default function Orders({ initialOrders = null }) {
       const data = res.data;
       const allItems = Array.isArray(data.items) ? data.items : [];
       const unprinted = allItems.filter((i) => !i.printed);
-      const isAddon = allItems.some((i) => i.printed);
-      const addonTotal = unprinted.reduce(
-        (a, b) => a + Number(b.price) * Number(b.qty),
-        0
-      );
+      const anyPrinted = allItems.some((i) => i.printed);
 
       receiptRef.current = {
         invoiceNo: data.id,
@@ -245,19 +241,15 @@ export default function Orders({ initialOrders = null }) {
         orderType: data.orderType,
         paymentMethod: data.paymentMethod,
         billStatus: data.billStatus,
-        /* bill prints ONLY unprinted lines; kitchen print keeps full order */
-        items: unprinted.length > 0 ? unprinted : allItems,
-        isAddon: unprinted.length > 0 && isAddon,
-        billDone: unprinted.length === 0,
-        subtotal: unprinted.length > 0 && isAddon ? addonTotal : data.subtotal,
-        total: unprinted.length > 0 && isAddon ? addonTotal : data.total,
-        cashReceived: isAddon && unprinted.length > 0 ? 0 : data.cashReceived,
-        cashBack: isAddon && unprinted.length > 0 ? 0 : data.cashBack,
-        dueAmount: isAddon && unprinted.length > 0 ? 0 : data.dueAmount,
-        date:
-          isAddon && unprinted.length > 0
-            ? new Date().toLocaleString()
-            : new Date(data.created_at).toLocaleString()
+        /* customer bill = FULL order; kitchen = only new add-on lines */
+        items: allItems,
+        kitchenItems: anyPrinted && unprinted.length > 0 ? unprinted : allItems,
+        subtotal: data.subtotal,
+        total: data.total,
+        cashReceived: data.cashReceived,
+        cashBack: data.cashBack,
+        dueAmount: data.dueAmount,
+        date: new Date(data.created_at).toLocaleString()
       };
 
       setShowBill(true);
@@ -325,8 +317,6 @@ export default function Orders({ initialOrders = null }) {
   <div class="center bold">PIZZA GHAR</div>
   <div class="center small">Orders @ 0330-5278777</div>
 
-  ${data.isAddon ? `<div class="center bold">*** ADD-ON BILL ***</div>` : ""}
-
   <div class="line"></div>
 
   <div>Date: ${data.date}</div>
@@ -389,7 +379,6 @@ export default function Orders({ initialOrders = null }) {
   <div>Total QTY: ${totalQty}</div>
   <div>Total Items: ${totalItems}</div>
 
-  ${data.isAddon ? "" : `
   <table>
     <tr>
       <td>Cash Received</td>
@@ -404,12 +393,11 @@ export default function Orders({ initialOrders = null }) {
       <td class="right">${data.dueAmount || 0}</td>
     </tr>
   </table>
-  `}
 
   <div class="line"></div>
 
   <div class="center bold">
-    ${data.isAddon ? "(*** ADD-ON BILL ***)" : `(*** BILL / ${data.billStatus.toUpperCase()} ***)`}
+    (*** BILL / ${data.billStatus.toUpperCase()} ***)
   </div>
 
   <div class="center bold">
@@ -425,39 +413,7 @@ export default function Orders({ initialOrders = null }) {
 </body>
 </html>`;
 
-    printHtml(html, async (result) => {
-      setIsPrinting(false);
-      if (result && result.ok === false) return; /* print failed → keep pending */
-
-      const d = receiptRef.current;
-      if (!d || d.billDone) return;
-      try {
-        const r = await fetch(`${API}/orders/${d.invoiceNo}/print-bill`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            lines: d.items.map((it) => ({
-              index: it.line,
-              name: it.name,
-              price: it.price,
-              qty: it.qty,
-            })),
-          }),
-        });
-        if (!r.ok) throw new Error("mark failed");
-        receiptRef.current = { ...d, billDone: true };
-        showAlert("Bill printed & marked", "success");
-      } catch (err) {
-        console.log(err);
-        showAlert(
-          "Printed, but status could not be saved — it may print again",
-          "warning"
-        );
-      }
-    });
+    printHtml(html, () => setIsPrinting(false));
   };
 
   const printKitchenSlip = async () => {
@@ -496,8 +452,8 @@ export default function Orders({ initialOrders = null }) {
 
     setIsPrinting(true);
 
-    const totalQty = data.items.reduce((a, b) => a + b.qty, 0);
-    const totalItems = data.items.length;
+    const totalQty = data.kitchenItems.reduce((a, b) => a + b.qty, 0);
+    const totalItems = data.kitchenItems.length;
 
     const html = `<!DOCTYPE html>
 <html>
@@ -558,7 +514,7 @@ export default function Orders({ initialOrders = null }) {
       </tr>
     </thead>
     <tbody>
-      ${data.items.map(item => `
+      ${data.kitchenItems.map(item => `
         <tr>
           <td>${item.name}</td>
           <td class="right">${item.qty}</td>
@@ -924,12 +880,6 @@ export default function Orders({ initialOrders = null }) {
 
             <hr className="my-3" />
 
-            {receiptRef.current.isAddon && (
-              <p className="text-xs text-orange-600 text-center font-semibold mb-2">
-                Add-on bill — only new (unprinted) items
-              </p>
-            )}
-
             {(receiptRef.current.items || []).map((item, i) => (
               <div key={i} className="flex justify-between text-sm">
                 <span>{item.name} x {item.qty}</span>
@@ -947,14 +897,14 @@ export default function Orders({ initialOrders = null }) {
             <div className="flex gap-2 mt-4">
               <button
                 onClick={printThermalReceipt}
-                disabled={isPrinting || receiptRef.current.billDone}
+                disabled={isPrinting}
                 className={`flex-1 py-2 rounded ${
-                  isPrinting || receiptRef.current.billDone
+                  isPrinting
                     ? "bg-gray-300 text-gray-600"
                     : "bg-green-500 text-white"
                 }`}
               >
-                {receiptRef.current.billDone ? "Bill Printed" : "Print Bill"}
+                Print Bill
               </button>
 
               <button

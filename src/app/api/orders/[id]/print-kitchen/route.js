@@ -7,6 +7,8 @@ import { jsonError } from "@/lib/paging";
 
 /* CLAIM KITCHEN RECEIPT PRINT (once per order version).
    First print allowed; returns 409 if already printed.
+   On success marks ALL current items printed so the next add-on
+   kitchen print shows ONLY the new lines.
    Order edit (PUT /:id) clears kitchenPrintedAt. */
 export async function POST(req, { params }) {
   try {
@@ -18,7 +20,7 @@ export async function POST(req, { params }) {
 
     const result = await Order.updateOne(
       { orderNo: Number(id), kitchenPrintedAt: null, deletedAt: null },
-      { $set: { kitchenPrintedAt: new Date() } }
+      { $set: { kitchenPrintedAt: new Date(), "items.$[].printed": true } }
     );
 
     if (result.matchedCount === 0) {

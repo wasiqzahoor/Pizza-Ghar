@@ -38,7 +38,11 @@ export async function GET(req) {
         date: formatKitchenDate(o.created_at),
         time: formatKitchenTime(o.created_at),
         description: o.orderDescription || "",
-        items: (o.items || []).map((it) => ({ name: it.name, qty: it.qty })),
+        items: (o.items || []).map((it) => ({
+          name: it.name,
+          qty: it.qty,
+          printed: !!it.printed,
+        })),
       }))
     );
   } catch (error) {

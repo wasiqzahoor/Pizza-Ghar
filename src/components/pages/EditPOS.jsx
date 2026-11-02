@@ -234,14 +234,25 @@ export default function EditPOS() {
 
       showAlert("Order Updated ✅", "success");
 
-      /* Only unprinted (new) lines go on the next bill print */
-      const unprinted = Array.isArray(res.data?.unprinted) ? res.data.unprinted : [];
+      /* Only new (unprinted) lines go on the kitchen add-on print;
+         the customer bill always prints the FULL order */
       const storedItems = Array.isArray(res.data?.items) ? res.data.items : [];
+      const unprinted = Array.isArray(res.data?.unprinted) ? res.data.unprinted : [];
       const anyPrinted = storedItems.some((i) => i.printed);
-      const addonTotal = unprinted.reduce(
-        (a, b) => a + Number(b.price) * Number(b.qty),
-        0
-      );
+
+      const fullItems = storedItems.length
+        ? storedItems.map((s) => ({
+            line: s.line,
+            name: s.name,
+            price: Number(s.price),
+            qty: Number(s.qty),
+          }))
+        : cart.map((item) => ({
+            line: null,
+            name: item.name,
+            price: Number(item.price),
+            qty: Number(item.qty),
+          }));
 
       const receiptSnapshot = {
         customerName,
@@ -253,30 +264,15 @@ export default function EditPOS() {
         address,
         orderDescription,
 
-        items:
-          unprinted.length > 0
-            ? unprinted.map((u) => ({
-                line: u.line,
-                name: u.name,
-                price: Number(u.price),
-                qty: Number(u.qty),
-              }))
-            : cart.map(item => ({
-                id: item.id,
-                name: item.name,
-                price: Number(item.price),
-                qty: Number(item.qty),
-              })),
+        items: fullItems,
+        kitchenItems: anyPrinted && unprinted.length > 0 ? unprinted : fullItems,
 
-        isAddon: unprinted.length > 0 && anyPrinted,
-        billDone: unprinted.length === 0,
+        subtotal,
+        total,
 
-        cashReceived:
-          unprinted.length > 0 && anyPrinted ? 0 : Number(cashReceived) || 0,
-        cashBack: unprinted.length > 0 && anyPrinted ? 0 : cashBack,
-        dueAmount: unprinted.length > 0 && anyPrinted ? 0 : dueAmount,
-        subtotal: unprinted.length > 0 ? addonTotal : subtotal,
-        total: unprinted.length > 0 ? addonTotal : total,
+        cashReceived: Number(cashReceived) || 0,
+        cashBack: cashBack,
+        dueAmount: dueAmount,
         date: new Date().toLocaleString(),
 
         invoiceNo: loadedOrderId
@@ -349,8 +345,6 @@ export default function EditPOS() {
   <div class="center bold">PIZZA GHAR</div>
   <div class="center small">Orders @ 0330-5278777</div>
 
-  ${data.isAddon ? `<div class="center bold">*** ADD-ON BILL ***</div>` : ""}
-
   <div class="line"></div>
 
   <div>Date: ${data.date}</div>
@@ -412,7 +406,6 @@ export default function EditPOS() {
   <div>Total QTY: ${totalQty}</div>
   <div>Total Items: ${totalItems}</div>
 
-  ${data.isAddon ? "" : `
   <table>
     <tr>
       <td>Cash Received</td>
@@ -427,12 +420,11 @@ export default function EditPOS() {
       <td class="right">${data.dueAmount || 0}</td>
     </tr>
   </table>
-  `}
 
   <div class="line"></div>
 
   <div class="center bold">
-    ${data.isAddon ? "(*** ADD-ON BILL ***)" : `(*** BILL / ${data.billStatus.toUpperCase()} ***)`}
+    (*** BILL / ${data.billStatus.toUpperCase()} ***)
   </div>
 
   <div class="center bold">
@@ -448,39 +440,7 @@ export default function EditPOS() {
 </body>
 </html>`;
 
-    printHtml(html, async (result) => {
-      setIsPrinting(false);
-      if (result && result.ok === false) return; /* print failed → keep pending */
-
-      const d = receiptRef.current;
-      if (!d || d.billDone) return;
-      try {
-        const r = await fetch(`${API}/orders/${d.invoiceNo}/print-bill`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            lines: d.items.map((it) => ({
-              index: it.line,
-              name: it.name,
-              price: it.price,
-              qty: it.qty,
-            })),
-          }),
-        });
-        if (!r.ok) throw new Error("mark failed");
-        receiptRef.current = { ...d, billDone: true };
-        showAlert("Bill printed & marked", "success");
-      } catch (err) {
-        console.log(err);
-        showAlert(
-          "Printed, but status could not be saved — it may print again",
-          "warning"
-        );
-      }
-    });
+    printHtml(html, () => setIsPrinting(false));
   };
 
   const printKitchenSlip = async () => {
@@ -519,8 +479,8 @@ export default function EditPOS() {
 
     setIsPrinting(true);
 
-    const totalQty = data.items.reduce((a, b) => a + b.qty, 0);
-    const totalItems = data.items.length;
+    const totalQty = data.kitchenItems.reduce((a, b) => a + b.qty, 0);
+    const totalItems = data.kitchenItems.length;
 
     const html = `<!DOCTYPE html>
 <html>
@@ -581,7 +541,7 @@ export default function EditPOS() {
       </tr>
     </thead>
     <tbody>
-      ${data.items.map(item => `
+      ${data.kitchenItems.map(item => `
         <tr>
           <td>${item.name}</td>
           <td class="right">${item.qty}</td>
@@ -819,12 +779,6 @@ export default function EditPOS() {
 
             <hr className="my-3" />
 
-            {receiptRef.current.isAddon && (
-              <p className="text-xs text-orange-600 text-center font-semibold mb-2">
-                Add-on bill — only new (unprinted) items
-              </p>
-            )}
-
             {(receiptRef.current.items || []).map((item, i) => (
 
               <div key={i} className="flex justify-between text-sm">
@@ -857,14 +811,14 @@ export default function EditPOS() {
 
               <button
                 onClick={printThermalReceipt}
-                disabled={isPrinting || receiptRef.current.billDone}
+                disabled={isPrinting}
                 className={`flex-1 py-2 rounded ${
-                  isPrinting || receiptRef.current.billDone
+                  isPrinting
                     ? "bg-gray-300 text-gray-600"
                     : "bg-green-500 text-white"
                 }`}
               >
-                {receiptRef.current.billDone ? "Bill Printed" : "Print Bill"}
+                Print Bill
               </button>
 
               <button

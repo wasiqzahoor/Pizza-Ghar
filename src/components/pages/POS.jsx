@@ -177,6 +177,12 @@ export default function POS({ initialProducts, initialCategoryNames }) {
           price: Number(item.price),
           qty: Number(item.qty),
         })),
+        kitchenItems: cart.map(item => ({
+          id: item.id,
+          name: item.name,
+          price: Number(item.price),
+          qty: Number(item.qty),
+        })),
         // ✅ NEW FIELDS
         cashReceived: Number(cashReceived) || 0,
         cashBack,
@@ -394,32 +400,7 @@ setOrderType("Dine In");
 </body>
 </html>`;
 
-    printHtml(html, async (result) => {
-      setIsPrinting(false);
-      if (result && result.ok === false) return; /* print failed → keep pending */
-
-      const d = receiptRef.current;
-      if (!d || !d.invoiceNo || d.billDone) return;
-      try {
-        const r = await fetch(`${API}/orders/${d.invoiceNo}/print-bill`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ all: true }),
-        });
-        if (!r.ok) throw new Error("mark failed");
-        receiptRef.current = { ...d, billDone: true };
-        showAlert("Bill printed & marked", "success");
-      } catch (err) {
-        console.log(err);
-        showAlert(
-          "Printed, but status could not be saved — it may print again",
-          "warning"
-        );
-      }
-    });
+    printHtml(html, () => setIsPrinting(false));
   };
 
   const printKitchenSlip = async () => {
@@ -458,8 +439,8 @@ setOrderType("Dine In");
 
     setIsPrinting(true);
 
-    const totalQty = data.items.reduce((a, b) => a + b.qty, 0);
-    const totalItems = data.items.length;
+    const totalQty = data.kitchenItems.reduce((a, b) => a + b.qty, 0);
+    const totalItems = data.kitchenItems.length;
 
     const html = `<!DOCTYPE html>
 <html>
@@ -520,7 +501,7 @@ setOrderType("Dine In");
       </tr>
     </thead>
     <tbody>
-      ${data.items.map(item => `
+      ${data.kitchenItems.map(item => `
         <tr>
           <td>${item.name}</td>
           <td class="right">${item.qty}</td>
@@ -856,14 +837,14 @@ setOrderType("Dine In");
 
               <button
                 onClick={printThermalReceipt}
-                disabled={isPrinting || receiptRef.current.billDone}
+                disabled={isPrinting}
                 className={`flex-1 py-2 rounded ${
-                  isPrinting || receiptRef.current.billDone
+                  isPrinting
                     ? "bg-gray-300 text-gray-600"
                     : "bg-green-500 text-white"
                 }`}
               >
-                {receiptRef.current.billDone ? "Bill Printed" : "Print Bill"}
+                Print Bill
               </button>
 
               <button

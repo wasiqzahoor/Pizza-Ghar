@@ -95,11 +95,40 @@ export default function ChefOrders({ initialOrders = null }) {
     );
   });
 
-const handlePrint = (order) => {
+const handlePrint = async (order) => {
   if (!order || isPrinting) return;
 
-  const totalQty = order.items?.reduce((a, b) => a + b.qty, 0) || 0;
-  const totalItems = order.items?.length || 0;
+  /* one kitchen print per order version — server claims it */
+  try {
+    const res = await fetch(`${API}/${order.id}/print-kitchen`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
+    });
+    if (res.status === 409) {
+      showAlert(
+        "Kitchen receipt already printed for this order. Modify the order to allow reprint.",
+        "warning"
+      );
+      return;
+    }
+    if (!res.ok) {
+      showAlert("Could not print kitchen receipt", "error");
+      return;
+    }
+  } catch {
+    showAlert("Could not print kitchen receipt", "error");
+    return;
+  }
+
+  /* add-on batch: only NEW (unprinted) lines go on this slip */
+  const allItems = order.items || [];
+  const anyPrinted = allItems.some((i) => i.printed);
+  const printItems = anyPrinted
+    ? allItems.filter((i) => !i.printed)
+    : allItems;
+
+  const totalQty = printItems.reduce((a, b) => a + b.qty, 0);
+  const totalItems = printItems.length;
 
   setIsPrinting(true);
 
@@ -159,7 +188,7 @@ ${order.description ? `<div class="bold">NOTE: ${order.description}</div>` : ""}
       </tr>
     </thead>
     <tbody>
-      ${(order.items || []).map(item => `
+      ${printItems.map(item => `
         <tr>
           <td>${item.name}</td>
           <td class="right">${item.qty}</td>
