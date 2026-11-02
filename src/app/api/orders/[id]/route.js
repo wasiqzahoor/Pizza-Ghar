@@ -32,11 +32,13 @@ export async function GET(req, { params }) {
       dueAmount: order.dueAmount,
       status: order.status,
       created_at: order.created_at || null,
-      items: (order.items || []).map((it) => ({
+      items: (order.items || []).map((it, i) => ({
+        line: i,
         name: it.name,
         price: it.price,
         qty: it.qty,
         total: it.total,
+        printed: !!it.printed,
       })),
     });
   } catch (error) {

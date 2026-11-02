@@ -8,6 +8,8 @@ const orderItemSchema = new mongoose.Schema(
     price: { type: Number, default: 0 },
     qty: { type: Number, default: 0 },
     total: { type: Number, default: 0 },
+    /* bill-print status per item — false = pending print (add-ons show here) */
+    printed: { type: Boolean, default: false },
   },
   { _id: false }
 );

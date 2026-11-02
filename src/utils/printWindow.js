@@ -7,13 +7,16 @@
 
    A module-level lock makes sure ONE click = ONE print job: repeat clicks
    while a print is in flight are ignored (their stray popup is closed). The
-   lock releases when the popup closes (after print/cancel) or after 15s. */
+   lock releases when the popup closes (after print/cancel) or after 15s.
+
+   onDone receives { ok } — ok:false when the print job never launched
+   (popup blocked / write failed) so callers can keep items pending. */
 
 let printingLock = false;
 
 export function printAndClose(win, onDone) {
   if (!win) {
-    if (typeof onDone === "function") onDone();
+    if (typeof onDone === "function") onDone({ ok: false });
     return;
   }
 
@@ -29,11 +32,11 @@ export function printAndClose(win, onDone) {
   printingLock = true;
 
   let finished = false;
-  const finish = () => {
+  const finish = (ok) => {
     if (finished) return;
     finished = true;
     printingLock = false;
-    if (typeof onDone === "function") onDone();
+    if (typeof onDone === "function") onDone({ ok: ok !== false });
   };
 
   setTimeout(() => {
@@ -52,7 +55,7 @@ export function printAndClose(win, onDone) {
       } catch (closeErr) {
         console.error("Close error:", closeErr);
       }
-      finish();
+      finish(false);
       return;
     }
 
@@ -66,7 +69,7 @@ export function printAndClose(win, onDone) {
       }
       if (closed || Date.now() - started > 15000) {
         clearInterval(timer);
-        finish();
+        finish(true);
       }
     }, 400);
   }, 300);

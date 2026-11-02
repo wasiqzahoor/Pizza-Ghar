@@ -405,7 +405,32 @@ setOrderType("Dine In");
     win.document.close();
 
     // ✅ print runs inside the popup — main app never freezes
-    printAndClose(win, () => setIsPrinting(false));
+    printAndClose(win, async (result) => {
+      setIsPrinting(false);
+      if (result && result.ok === false) return; /* print failed → keep pending */
+
+      const d = receiptRef.current;
+      if (!d || !d.invoiceNo || d.billDone) return;
+      try {
+        const r = await fetch(`${API}/orders/${d.invoiceNo}/print-bill`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ all: true }),
+        });
+        if (!r.ok) throw new Error("mark failed");
+        receiptRef.current = { ...d, billDone: true };
+        showAlert("Bill printed & marked", "success");
+      } catch (err) {
+        console.log(err);
+        showAlert(
+          "Printed, but status could not be saved — it may print again",
+          "warning"
+        );
+      }
+    });
   };
 
   const printKitchenSlip = async () => {
@@ -850,11 +875,14 @@ setOrderType("Dine In");
 
               <button
                 onClick={printThermalReceipt}
-                disabled={isPrinting}
-                className={`flex-1 py-2 rounded ${isPrinting ? "bg-gray-400" : "bg-green-500 text-white"
-                  }`}
+                disabled={isPrinting || receiptRef.current.billDone}
+                className={`flex-1 py-2 rounded ${
+                  isPrinting || receiptRef.current.billDone
+                    ? "bg-gray-300 text-gray-600"
+                    : "bg-green-500 text-white"
+                }`}
               >
-                Print Bill
+                {receiptRef.current.billDone ? "Bill Printed" : "Print Bill"}
               </button>
 
               <button
