@@ -145,8 +145,9 @@ const handlePrint = (order) => {
   <div class="line"></div>
 <div>Date: ${order.date || ""}</div>
 <div>Time: ${order.time || ""}</div>
-  <div>Customer: ${order.customer || "Walk-in"}</div>
-  <div>Type: ${order.type}</div>
+<div>Customer: ${order.customer || "Walk-in"}</div>
+<div>Type: ${order.type}</div>
+${order.description ? `<div class="bold">NOTE: ${order.description}</div>` : ""}
 
   <div class="line"></div>
 

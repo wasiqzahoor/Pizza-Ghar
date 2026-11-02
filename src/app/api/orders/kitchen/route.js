@@ -24,7 +24,9 @@ export async function GET(req) {
     })
       .sort({ orderNo: -1 })
       .limit(100)
-      .select("orderNo customerName orderType status created_at items")
+      .select(
+        "orderNo customerName orderType status created_at items orderDescription"
+      )
       .lean();
 
     return Response.json(
@@ -35,6 +37,7 @@ export async function GET(req) {
         status: o.status || "preparing",
         date: formatKitchenDate(o.created_at),
         time: formatKitchenTime(o.created_at),
+        description: o.orderDescription || "",
         items: (o.items || []).map((it) => ({ name: it.name, qty: it.qty })),
       }))
     );

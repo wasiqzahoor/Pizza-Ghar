@@ -80,7 +80,10 @@ export async function PUT(req, { params }) {
     order.customerName = customerName || null;
     order.customerPhone = customerPhone || null;
     order.deliveryAddress = address || null;
-    order.orderDescription = orderDescription || null;
+    /* only overwrite description when client actually sent one */
+    if (orderDescription !== undefined) {
+      order.orderDescription = orderDescription || null;
+    }
     order.orderType = orderType;
     order.paymentMethod = paymentMethod;
     order.billStatus = billStatus;

@@ -545,7 +545,7 @@ export default function Orders({ initialOrders = null }) {
     <div>Date: ${data.date}</div>
 
     ${data.orderDescription ? `
-  <div>Description: ${data.orderDescription}</div>
+  <div class="bold">NOTE: ${data.orderDescription}</div>
 ` : ""}
 
   <div class="line"></div>

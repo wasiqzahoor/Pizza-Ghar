@@ -43,6 +43,7 @@ export default function EditPOS() {
   const [tableNo, setTableNo] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [address, setAddress] = useState("");
+  const [orderDescription, setOrderDescription] = useState("");
   const [showPhoneField, setShowPhoneField] = useState(false);
   const [showAddressField, setShowAddressField] = useState(false);
 
@@ -123,6 +124,7 @@ export default function EditPOS() {
 
       setCustomerPhone(phone);
       setAddress(addr);
+      setOrderDescription(data.orderDescription || "");
 
       setShowPhoneField(!!phone);
       setShowAddressField(!!addr);
@@ -209,6 +211,7 @@ export default function EditPOS() {
           customerName,
           customerPhone,
           address,
+          orderDescription,
 
           orderType,
           paymentMethod,
@@ -248,6 +251,7 @@ export default function EditPOS() {
         tableNo,
         customerPhone,
         address,
+        orderDescription,
 
         items:
           unprinted.length > 0
@@ -356,6 +360,10 @@ export default function EditPOS() {
   ${data.customerPhone ? `<div>Cell #: ${data.customerPhone}</div>` : ""}
   ${data.address ? `<div>Address: ${data.address}</div>` : ""}
   ${data.tableNo ? `<div>Table: ${data.tableNo}</div>` : ""}
+
+  ${data.orderDescription ? `
+  <div>Description: ${data.orderDescription}</div>
+` : ""}
 
   <div class="line"></div>
 
@@ -559,6 +567,9 @@ export default function EditPOS() {
   <div>Type: ${data.orderType}</div>
   ${data.tableNo ? `<div>Table: ${data.tableNo}</div>` : ""}
     <div>Date: ${data.date}</div>
+    ${data.orderDescription ? `
+  <div class="bold">NOTE: ${data.orderDescription}</div>
+` : ""}
 
   <div class="line"></div>
 
@@ -689,6 +700,14 @@ export default function EditPOS() {
     className="border w-full mb-2 px-3 py-2 h-16 resize-none"
   />
 )}
+
+<textarea
+  placeholder="Order Description (optional)"
+  value={orderDescription}
+  onChange={(e) => setOrderDescription(e.target.value)}
+  className="border w-full mb-2 px-3 py-2 h-16 resize-none"
+/>
+
         {/* CART */}
         {cart.map(item => (
           <div key={item.id} className="flex justify-between mb-3">

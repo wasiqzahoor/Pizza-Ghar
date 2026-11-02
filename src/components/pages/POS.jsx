@@ -506,6 +506,9 @@ setOrderType("Dine In");
   <div>Type: ${data.orderType}</div>
   ${data.tableNo ? `<div>Table: ${data.tableNo}</div>` : ""}
     <div>Date: ${data.date}</div>
+    ${data.orderDescription ? `
+  <div class="bold">NOTE: ${data.orderDescription}</div>
+` : ""}
 
   <div class="line"></div>
 
