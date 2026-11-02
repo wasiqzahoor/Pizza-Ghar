@@ -20,6 +20,7 @@ import useAuthCheck from "@/hooks/useAuthCheck";
 import Pagination from "@/components/Pagination";
 import { showAlert, showConfirm } from "@/utils/popup";
 import { printHtml } from "@/utils/printWindow";
+import { autoPrintPreflight } from "@/utils/autoPrint";
 import { formatListDate, formatListTime } from "@/lib/dates";
 
 const formatOrderRows = (rows) =>
@@ -415,7 +416,7 @@ export default function Orders({ initialOrders = null }) {
 </body>
 </html>`;
 
-    printHtml(html, () => setIsPrinting(false));
+    printHtml(html, () => setIsPrinting(false), "bill");
   };
 
   const printKitchenSlip = async () => {
@@ -423,6 +424,11 @@ export default function Orders({ initialOrders = null }) {
 
     const data = receiptRef.current;
     if (!data) return;
+
+    /* auto dual-print ON → verify QZ + kitchen printer BEFORE claiming,
+       so a failure can never mark the receipt as printed */
+    const pre = await autoPrintPreflight("kitchen");
+    if (!pre.ok) return;
 
     try {
       const res = await fetch(
@@ -543,7 +549,7 @@ export default function Orders({ initialOrders = null }) {
 </body>
 </html>`;
 
-    printHtml(html, () => setIsPrinting(false));
+    printHtml(html, () => setIsPrinting(false), "kitchen");
   };
 
   const statusBadge = status => {

@@ -12,6 +12,7 @@ import axios from "axios";
 import Topbar from "@/components/Topbar";
 import { showAlert } from "@/utils/popup";
 import { printHtml } from "@/utils/printWindow";
+import { autoPrintPreflight } from "@/utils/autoPrint";
 
 export default function ChefOrders({ initialOrders = null }) {
    useAuthCheck();
@@ -97,6 +98,11 @@ export default function ChefOrders({ initialOrders = null }) {
 
 const handlePrint = async (order) => {
   if (!order || isPrinting) return;
+
+  /* auto dual-print ON → verify QZ + kitchen printer BEFORE claiming,
+     so a failure can never mark the receipt as printed */
+  const pre = await autoPrintPreflight("kitchen");
+  if (!pre.ok) return;
 
   /* one kitchen print per order version — server claims it */
   try {
@@ -215,7 +221,7 @@ ${order.description ? `<div class="bold">NOTE: ${order.description}</div>` : ""}
 </body>
 </html>`;
 
-  printHtml(html, () => setIsPrinting(false));
+  printHtml(html, () => setIsPrinting(false), "kitchen");
 };
 
   return (

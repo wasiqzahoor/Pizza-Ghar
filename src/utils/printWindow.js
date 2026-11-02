@@ -1,5 +1,7 @@
 "use client";
 
+import { getPrintSettings, qzPrintReceipt } from "./autoPrint";
+
 /* Print helper — hands print() over to the RECEIPT POPUP's own JS context.
    window.print() is synchronous: calling it from the main app thread freezes
    the whole app ("Not Responding") until the print dialog closes. Running it
@@ -9,10 +11,17 @@
    while a print is in flight are ignored (their stray popup is closed). The
    lock releases when the popup closes (after print/cancel) or after 15s.
 
+   kind ("bill" | "kitchen") routes the job when the admin's Automatic
+   Dual Printer Printing toggle is ON: the receipt then goes silently to
+   the assigned QZ Tray printer with no browser dialog. Toggle OFF keeps
+   this exact popup/iframe flow.
+
    onDone receives { ok } — ok:false when the print job never launched
-   (popup blocked / write failed) so callers can keep items pending. */
+   (popup blocked / write failed / QZ error) so callers can keep items
+   pending. */
 
 let printingLock = false;
+let autoPrintingLock = false;
 
 export function printAndClose(win, onDone) {
   if (!win) {
@@ -75,11 +84,30 @@ export function printAndClose(win, onDone) {
   }, 300);
 }
 
-/* Print an HTML receipt without worrying about popup blockers:
-   1. tries a popup first (app stays responsive while the dialog is open)
-   2. if the popup is blocked/fails → hidden same-origin iframe fallback
-      (works everywhere; page may pause while the print dialog is open) */
-export function printHtml(html, onDone) {
+/* Print an HTML receipt:
+   - auto dual-printing ON  → silent QZ Tray job on the assigned printer
+   - auto dual-printing OFF → popup first (app stays responsive while the
+     dialog is open), and if the popup is blocked/fails → hidden same-origin
+     iframe fallback (works everywhere; page may pause while the dialog is open) */
+export async function printHtml(html, onDone, kind = "bill") {
+  try {
+    const settings = await getPrintSettings();
+    if (settings.autoDualPrint) {
+      if (autoPrintingLock) {
+        if (typeof onDone === "function") onDone({ ok: false });
+        return;
+      }
+      autoPrintingLock = true;
+      await qzPrintReceipt(html, kind, (result) => {
+        autoPrintingLock = false;
+        if (typeof onDone === "function") onDone(result);
+      });
+      return;
+    }
+  } catch {
+    /* settings unreachable → default manual flow */
+  }
+
   let win = null;
   try {
     win = window.open("", "_blank", "width=320,height=700");

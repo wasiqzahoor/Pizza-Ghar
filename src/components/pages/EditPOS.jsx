@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { showAlert } from "@/utils/popup";
 import { printHtml } from "@/utils/printWindow";
+import { autoPrintPreflight } from "@/utils/autoPrint";
 
 export default function EditPOS() {
 
@@ -440,7 +441,7 @@ export default function EditPOS() {
 </body>
 </html>`;
 
-    printHtml(html, () => setIsPrinting(false));
+    printHtml(html, () => setIsPrinting(false), "bill");
   };
 
   const printKitchenSlip = async () => {
@@ -448,6 +449,11 @@ export default function EditPOS() {
 
     const data = receiptRef.current;
     if (!data) return;
+
+    /* auto dual-print ON → verify QZ + kitchen printer BEFORE claiming,
+       so a failure can never mark the receipt as printed */
+    const pre = await autoPrintPreflight("kitchen");
+    if (!pre.ok) return;
 
     try {
       const res = await fetch(
@@ -568,7 +574,7 @@ export default function EditPOS() {
 </body>
 </html>`;
 
-    printHtml(html, () => setIsPrinting(false));
+    printHtml(html, () => setIsPrinting(false), "kitchen");
   };
 
   /* ================= FILTER ================= */

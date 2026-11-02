@@ -10,5 +10,10 @@ export default async function Page() {
     "/api/daily-notes",
     token
   );
-  return <AdminSettings initialNotes={data} />;
+  const printSettings = await callRoute(
+    () => import("@/app/api/admin-settings/route"),
+    "/api/admin-settings",
+    token
+  );
+  return <AdminSettings initialNotes={data} initialPrint={printSettings} />;
 }
