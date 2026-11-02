@@ -113,7 +113,7 @@ const handlePrint = (order) => {
       width: 80mm;
       font-family: monospace;
       padding: 8px;
-      font-size: 12px;
+      font-size: 13px;
     }
     .center { text-align: center; }
     .bold { font-weight: bold; }
@@ -121,12 +121,12 @@ const handlePrint = (order) => {
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 12px;
+      font-size: 13px;
     }
     th, td { padding: 2px 0; }
     th { border-bottom: 1px solid #000; }
     .right { text-align: right; }
-    .small { font-size: 11px; }
+    .small { font-size: 12px; }
     img.logo {
       max-width: 70mm;
       margin-bottom: 6px;

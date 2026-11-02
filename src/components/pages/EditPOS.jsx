@@ -310,7 +310,7 @@ export default function EditPOS() {
       width: 80mm;
       font-family: monospace;
       padding: 8px;
-      font-size: 12px;
+      font-size: 13px;
     }
     .center { text-align: center; }
     .bold { font-weight: bold; }
@@ -318,7 +318,7 @@ export default function EditPOS() {
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 12px;
+      font-size: 13px;
     }
     th, td {
       padding: 2px 0;
@@ -327,8 +327,8 @@ export default function EditPOS() {
       border-bottom: 1px solid #000;
     }
     .right { text-align: right; }
-    .total { font-weight: bold; font-size: 14px; }
-    .small { font-size: 11px; }
+    .total { font-weight: bold; font-size: 15px; }
+    .small { font-size: 12px; }
     img.logo {
       max-width: 70mm;
       margin-bottom: 6px;
@@ -524,7 +524,7 @@ export default function EditPOS() {
       width: 80mm;
       font-family: monospace;
       padding: 8px;
-      font-size: 12px;
+      font-size: 13px;
     }
     .center { text-align: center; }
     .bold { font-weight: bold; }
@@ -532,12 +532,12 @@ export default function EditPOS() {
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 12px;
+      font-size: 13px;
     }
     th, td { padding: 2px 0; }
     th { border-bottom: 1px solid #000; }
     .right { text-align: right; }
-    .small { font-size: 11px; }
+    .small { font-size: 12px; }
     img.logo {
       max-width: 70mm;
       margin-bottom: 6px;
