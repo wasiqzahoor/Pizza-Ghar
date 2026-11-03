@@ -64,10 +64,55 @@ function friendlyError(err) {
   return msg;
 }
 
+/* Silent signed connection: QZ Tray trusts this website without any
+   Allow prompts — the public cert identifies us, /api/qz-sign signs
+   each call with the private key from Vercel. If the cert cannot be
+   loaded QZ falls back to the normal anonymous prompt flow. */
+let qzSecurityDone = false;
+function setupQzSecurity(qz) {
+  if (qzSecurityDone || !qz?.security) return;
+  qzSecurityDone = true;
+
+  qz.security.setCertificatePromise(async () => {
+    const res = await fetch(`${API_BASE}/qz-cert.pem`, { cache: "no-store" });
+    if (!res.ok) throw new Error("certificate unavailable");
+    return res.text();
+  });
+  qz.security.setSignatureAlgorithm("SHA512");
+  qz.security.setSignaturePromise((toSign) => (resolve, reject) => {
+    let token = null;
+    try {
+      token = localStorage.getItem("token");
+    } catch {
+      /* no storage access */
+    }
+    fetch(`${API_BASE}/api/qz-sign`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ toSign }),
+    })
+      .then(async (res) => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.signature) {
+          throw new Error(data.error || "Signing failed.");
+        }
+        return data.signature;
+      })
+      .then(resolve)
+      .catch(reject);
+  });
+}
+
 /* Load qz-tray.js from CDN once (cached on window.qz). */
 let qzLibPromise = null;
 function loadQz() {
-  if (window.qz) return Promise.resolve(window.qz);
+  if (window.qz) {
+    setupQzSecurity(window.qz);
+    return Promise.resolve(window.qz);
+  }
   if (qzLibPromise) return qzLibPromise;
 
   qzLibPromise = new Promise((resolve, reject) => {
@@ -78,14 +123,18 @@ function loadQz() {
     const el = document.createElement("script");
     el.src = QZ_LIB_URL;
     el.async = true;
-    el.onload = () => (window.qz ? resolve(window.qz) : fail());
+    el.onload = () => {
+      if (!window.qz) return fail();
+      setupQzSecurity(window.qz);
+      resolve(window.qz);
+    };
     el.onerror = fail;
     document.head.appendChild(el);
   });
   return qzLibPromise;
 }
 
-/* Connect to the QZ Tray desktop app (native trust prompt on first use). */
+/* Connect to the QZ Tray desktop app (signed → no prompt). */
 async function connectQz() {
   const qz = await loadQz();
   if (qz.websocket.isConnected()) return qz;
@@ -110,7 +159,7 @@ async function ensurePrinter(qz, name) {
   if (!found) {
     let list = null;
     try {
-      list = await qz.printers.list();
+      list = await qz.printers.find();
     } catch {
       list = null;
     }
@@ -146,8 +195,9 @@ async function preparePrinter(kind) {
 export async function listQzPrinters() {
   try {
     const qz = await connectQz();
+    /* qz.printers.find() with no query returns ALL installed printers */
     const list = await withTimeout(
-      qz.printers.list(),
+      qz.printers.find(),
       15000,
       "Printer detection timed out."
     );
