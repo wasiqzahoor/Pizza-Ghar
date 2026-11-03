@@ -14,8 +14,8 @@ import { showAlert } from "@/utils/popup";
 
 const DEFAULTS = {
   autoDualPrint: false,
-  billPrinter: "Black Copper",
-  kitchenPrinter: "POS 80X",
+  billPrinter: "",
+  kitchenPrinter: "",
 };
 
 const QZ_LIB_URL = "https://cdn.jsdelivr.net/npm/qz-tray@2.3.0/qz-tray.js";
@@ -125,10 +125,37 @@ async function ensurePrinter(qz, name) {
 
 async function preparePrinter(kind) {
   const settings = await getPrintSettings();
-  const printer = kind === "kitchen" ? settings.kitchenPrinter : settings.billPrinter;
+  const printer = (
+    kind === "kitchen" ? settings.kitchenPrinter : settings.billPrinter
+  ).trim();
+  if (!printer) {
+    throw new Error(
+      kind === "kitchen"
+        ? "No kitchen receipt printer selected. Open Settings and choose a printer."
+        : "No customer bill printer selected. Open Settings and choose a printer."
+    );
+  }
   const qz = await connectQz();
   await ensurePrinter(qz, printer);
   return { qz, printer, settings };
+}
+
+/* Live list of printers installed on THIS computer, exactly as QZ Tray
+   reports them (no hardcoded names). Throws a friendly error when QZ Tray
+   is not running / not connected so the UI can offer Retry. */
+export async function listQzPrinters() {
+  try {
+    const qz = await connectQz();
+    const list = await withTimeout(
+      qz.printers.list(),
+      15000,
+      "Printer detection timed out."
+    );
+    if (!Array.isArray(list)) return [];
+    return [...list].sort((a, b) => String(a).localeCompare(String(b)));
+  } catch (err) {
+    throw new Error(friendlyError(err));
+  }
 }
 
 /* PREFLIGHT for one-time kitchen prints: called BEFORE the server

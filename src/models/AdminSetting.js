@@ -4,8 +4,8 @@ const adminSettingSchema = new mongoose.Schema({
   name: { type: String, default: "Admin" },
   title: { type: String, default: "Administrator" },
   autoDualPrint: { type: Boolean, default: false },
-  billPrinter: { type: String, default: "Black Copper" },
-  kitchenPrinter: { type: String, default: "POS 80X" },
+  billPrinter: { type: String, default: "" },
+  kitchenPrinter: { type: String, default: "" },
 });
 
 export const AdminSetting =

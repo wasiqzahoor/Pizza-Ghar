@@ -11,8 +11,8 @@ function settingsJson(settings) {
     name: settings.name,
     title: settings.title,
     autoDualPrint: !!settings.autoDualPrint,
-    billPrinter: settings.billPrinter || "Black Copper",
-    kitchenPrinter: settings.kitchenPrinter || "POS 80X",
+    billPrinter: settings.billPrinter || "",
+    kitchenPrinter: settings.kitchenPrinter || "",
   };
 }
 
@@ -49,10 +49,10 @@ export async function PUT(req) {
     if (body.title !== undefined) settings.title = String(body.title);
     if (body.autoDualPrint !== undefined) settings.autoDualPrint = !!body.autoDualPrint;
     if (body.billPrinter !== undefined) {
-      settings.billPrinter = String(body.billPrinter).trim() || "Black Copper";
+      settings.billPrinter = String(body.billPrinter).trim();
     }
     if (body.kitchenPrinter !== undefined) {
-      settings.kitchenPrinter = String(body.kitchenPrinter).trim() || "POS 80X";
+      settings.kitchenPrinter = String(body.kitchenPrinter).trim();
     }
     await settings.save();
 

@@ -4,8 +4,19 @@ import { API_BASE } from "@/config/api";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import useAuthCheck from "@/hooks/useAuthCheck";
-import { KeyRound, History, StickyNote, Save, Pencil, Trash2, Printer } from "lucide-react";
+import {
+  KeyRound,
+  History,
+  StickyNote,
+  Save,
+  Pencil,
+  Trash2,
+  Printer,
+  RefreshCw,
+  AlertTriangle
+} from "lucide-react";
 import { showAlert, showConfirm } from "@/utils/popup";
+import { listQzPrinters } from "@/utils/autoPrint";
 
 export default function AdminSettings({ initialNotes = null, initialPrint = null }) {
   useAuthCheck();
@@ -18,12 +29,16 @@ export default function AdminSettings({ initialNotes = null, initialPrint = null
 
   /* Automatic Dual Printer Printing (QZ Tray) */
   const [autoPrint, setAutoPrint] = useState(() => !!initialPrint?.autoDualPrint);
-  const [billPrinter, setBillPrinter] = useState(
-    initialPrint?.billPrinter || "Black Copper"
-  );
+  const [billPrinter, setBillPrinter] = useState(initialPrint?.billPrinter || "");
   const [kitchenPrinter, setKitchenPrinter] = useState(
-    initialPrint?.kitchenPrinter || "POS 80X"
+    initialPrint?.kitchenPrinter || ""
   );
+
+  /* live printers detected on this computer through QZ Tray */
+  const [printers, setPrinters] = useState([]);
+  const [printersLoading, setPrintersLoading] = useState(false);
+  const [printersError, setPrintersError] = useState("");
+  const [missingPrinters, setMissingPrinters] = useState([]);
 
   const fetchNotes = async () => {
     try {
@@ -38,13 +53,60 @@ export default function AdminSettings({ initialNotes = null, initialPrint = null
   const fetchPrintSettings = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/admin-settings`, { cache: "no-store" });
-      if (!res.ok) return;
+      if (!res.ok) return null;
       const data = await res.json();
       setAutoPrint(!!data.autoDualPrint);
-      setBillPrinter(data.billPrinter || "Black Copper");
-      setKitchenPrinter(data.kitchenPrinter || "POS 80X");
+      setBillPrinter((data.billPrinter || "").trim());
+      setKitchenPrinter((data.kitchenPrinter || "").trim());
+      return data;
     } catch {
-      /* keep current values */
+      return null;
+    }
+  };
+
+  /* Detect installed printers through QZ Tray. `seed` carries the latest
+     saved names when called right after a settings fetch (state may not
+     have re-rendered yet); Refresh/Retry use the current component state. */
+  const detectPrinters = async (seed) => {
+    const currentBill = (seed?.billPrinter ?? billPrinter) || "";
+    const currentKitchen = (seed?.kitchenPrinter ?? kitchenPrinter) || "";
+
+    setPrintersLoading(true);
+    setPrintersError("");
+
+    try {
+      const list = await listQzPrinters();
+
+      if (!list.length) {
+        setPrinters([]);
+        setMissingPrinters([]);
+        setPrintersError(
+          "No printers detected on this computer. Connect a printer and click Refresh Printers."
+        );
+        return;
+      }
+
+      /* a saved printer that is no longer installed → clear it + warn */
+      const missing = [];
+      if (currentBill && !list.includes(currentBill)) {
+        missing.push(`Customer Bill: ${currentBill}`);
+        setBillPrinter("");
+      }
+      if (currentKitchen && !list.includes(currentKitchen)) {
+        missing.push(`Kitchen Receipt: ${currentKitchen}`);
+        setKitchenPrinter("");
+      }
+
+      setPrinters(list);
+      setMissingPrinters(missing);
+    } catch (err) {
+      setPrinters([]);
+      setMissingPrinters([]);
+      setPrintersError(
+        err?.message || "QZ Tray is not running. Open the QZ Tray app and click Retry Connection."
+      );
+    } finally {
+      setPrintersLoading(false);
     }
   };
 
@@ -58,30 +120,54 @@ export default function AdminSettings({ initialNotes = null, initialPrint = null
     fetchNotes();
   }, []);
 
+  /* fetch saved settings (if not SSR'd) then auto-detect printers
+     when the printer settings section is opened */
   useEffect(() => {
-    if (!initialPrint) fetchPrintSettings();
+    (async () => {
+      let seed = null;
+      if (!initialPrint) {
+        seed = await fetchPrintSettings();
+      }
+      await detectPrinters({
+        billPrinter: seed ? (seed.billPrinter || "").trim() : initialPrint?.billPrinter || "",
+        kitchenPrinter: seed
+          ? (seed.kitchenPrinter || "").trim()
+          : initialPrint?.kitchenPrinter || ""
+      });
+    })();
   }, []);
 
   const handleSavePrint = async () => {
-    if (autoPrint && !billPrinter.trim()) {
-      return showAlert("Enter the customer bill printer name", "warning");
-    }
-    if (autoPrint && !kitchenPrinter.trim()) {
-      return showAlert("Enter the kitchen receipt printer name", "warning");
+    if (autoPrint) {
+      if (printersLoading) {
+        return showAlert("Printer detection is running — please wait", "warning");
+      }
+      if (printersError) {
+        return showAlert(
+          "Connect QZ Tray and detect printers first, or turn the toggle OFF",
+          "warning"
+        );
+      }
+      if (!billPrinter || !printers.includes(billPrinter)) {
+        return showAlert("Select an available customer bill printer", "warning");
+      }
+      if (!kitchenPrinter || !printers.includes(kitchenPrinter)) {
+        return showAlert("Select an available kitchen receipt printer", "warning");
+      }
     }
 
     try {
+      const body = { autoDualPrint: autoPrint };
+      if (billPrinter) body.billPrinter = billPrinter;
+      if (kitchenPrinter) body.kitchenPrinter = kitchenPrinter;
+
       const res = await fetch(`${API_BASE}/api/admin-settings`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`
         },
-        body: JSON.stringify({
-          autoDualPrint: autoPrint,
-          billPrinter: billPrinter.trim(),
-          kitchenPrinter: kitchenPrinter.trim()
-        })
+        body: JSON.stringify(body)
       });
 
       if (!res.ok) {
@@ -91,8 +177,8 @@ export default function AdminSettings({ initialNotes = null, initialPrint = null
 
       showAlert(
         autoPrint
-          ? "Auto printing ON — receipts now print to the assigned printers"
-          : "Auto printing OFF — browser print dialog will be used",
+          ? "Print settings saved — auto printing ON"
+          : "Print settings saved — auto printing OFF (browser dialog)",
         "success"
       );
     } catch {
@@ -182,6 +268,32 @@ export default function AdminSettings({ initialNotes = null, initialPrint = null
           <Printer size={18} className="text-emerald-600" /> Automatic Dual Printer Printing
         </h3>
 
+        {/* QZ CONNECTION / EMPTY STATE */}
+        {printersError && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 mb-4 text-sm flex flex-wrap items-center justify-between gap-3">
+            <span>{printersError}</span>
+            <button
+              onClick={() => detectPrinters()}
+              disabled={printersLoading}
+              className="shrink-0 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-sm transition disabled:opacity-60"
+            >
+              <RefreshCw size={14} className={printersLoading ? "animate-spin" : ""} />
+              Retry Connection
+            </button>
+          </div>
+        )}
+
+        {/* SAVED PRINTER NO LONGER AVAILABLE */}
+        {missingPrinters.length > 0 && (
+          <div className="bg-amber-50 border border-amber-300 text-amber-800 rounded-lg p-3 mb-4 text-sm flex items-start gap-2">
+            <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+            <span>
+              Saved printer no longer available: {missingPrinters.join(", ")}. Please
+              select an available printer.
+            </span>
+          </div>
+        )}
+
         <div className="flex items-center justify-between gap-3 mb-2">
           <span className="font-medium">Enable Automatic Dual Printer Printing</span>
           <button
@@ -207,32 +319,64 @@ export default function AdminSettings({ initialNotes = null, initialPrint = null
             : "OFF — the normal browser print dialog opens, exactly as before."}
         </p>
 
-        <div className="grid sm:grid-cols-2 gap-3 mb-4">
+        {/* PRINTER DROPDOWNS (detected through QZ Tray) */}
+        <div className="grid sm:grid-cols-2 gap-3 mb-3">
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">
               Customer Bill Printer
             </label>
-            <input
-              type="text"
-              value={billPrinter}
+            <select
+              value={printers.includes(billPrinter) ? billPrinter : ""}
               onChange={(e) => setBillPrinter(e.target.value)}
-              placeholder="Black Copper"
-              className="w-full border rounded-lg p-2 text-sm"
-            />
+              disabled={printersLoading}
+              className="w-full border rounded-lg p-2 text-sm bg-white disabled:bg-gray-50"
+            >
+              <option value="">Select Printer</option>
+              {printers.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-600 mb-1">
               Kitchen Receipt Printer
             </label>
-            <input
-              type="text"
-              value={kitchenPrinter}
+            <select
+              value={printers.includes(kitchenPrinter) ? kitchenPrinter : ""}
               onChange={(e) => setKitchenPrinter(e.target.value)}
-              placeholder="POS 80X"
-              className="w-full border rounded-lg p-2 text-sm"
-            />
+              disabled={printersLoading}
+              className="w-full border rounded-lg p-2 text-sm bg-white disabled:bg-gray-50"
+            >
+              <option value="">Select Printer</option>
+              {printers.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
           </div>
+        </div>
+
+        {/* DETECT STATUS + REFRESH */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <span className="text-sm text-gray-500">
+            {printersLoading
+              ? "Detecting printers..."
+              : printersError
+                ? ""
+                : `${printers.length} printer(s) detected`}
+          </span>
+          <button
+            onClick={() => detectPrinters()}
+            disabled={printersLoading}
+            className="flex items-center gap-2 bg-gray-800 hover:bg-black transition text-white px-4 py-2 rounded-lg text-sm disabled:opacity-60"
+          >
+            <RefreshCw size={16} className={printersLoading ? "animate-spin" : ""} />
+            {printersLoading ? "Detecting..." : "Refresh Printers"}
+          </button>
         </div>
 
         <button
@@ -243,8 +387,9 @@ export default function AdminSettings({ initialNotes = null, initialPrint = null
         </button>
 
         <p className="text-xs text-gray-400 mt-3">
-          Requires the QZ Tray desktop app to be installed and running on this
-          computer. On first use QZ Tray asks for permission to connect.
+          Printers are read live from this computer through the QZ Tray desktop
+          app (it must be installed and running). On first use QZ Tray asks for
+          permission to connect.
         </p>
       </div>
 
