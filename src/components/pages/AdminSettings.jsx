@@ -40,6 +40,18 @@ export default function AdminSettings({ initialNotes = null, initialPrint = null
   const [printersError, setPrintersError] = useState("");
   const [missingPrinters, setMissingPrinters] = useState([]);
 
+  /* automatic reconnect: while the page is open we keep retrying on our
+     own, so printers show up as soon as QZ Tray is reachable — the user
+     never has to click Retry */
+  const detectInFlight = useRef(false);
+  const autoRetryTimer = useRef(null);
+  const detectFailed = useRef(false);
+  const isMounted = useRef(true);
+  const billRef = useRef(billPrinter);
+  const kitchenRef = useRef(kitchenPrinter);
+  billRef.current = billPrinter;
+  kitchenRef.current = kitchenPrinter;
+
   const fetchNotes = async () => {
     try {
       const res = await fetch(`${API_BASE}/api/daily-notes`);
@@ -66,13 +78,28 @@ export default function AdminSettings({ initialNotes = null, initialPrint = null
 
   /* Detect installed printers through QZ Tray. `seed` carries the latest
      saved names when called right after a settings fetch (state may not
-     have re-rendered yet); Refresh/Retry use the current component state. */
-  const detectPrinters = async (seed) => {
-    const currentBill = (seed?.billPrinter ?? billPrinter) || "";
-    const currentKitchen = (seed?.kitchenPrinter ?? kitchenPrinter) || "";
+     have re-rendered yet); Refresh/Retry use the current component state.
+     `silent` runs without the spinner and schedules the next auto-retry. */
+  const detectPrinters = async (seed, silent = false) => {
+    if (detectInFlight.current) return;
+    const currentBill = (seed?.billPrinter ?? billRef.current) || "";
+    const currentKitchen = (seed?.kitchenPrinter ?? kitchenRef.current) || "";
 
-    setPrintersLoading(true);
-    setPrintersError("");
+    detectInFlight.current = true;
+    if (!silent) {
+      setPrintersLoading(true);
+      setPrintersError("");
+    }
+
+    const scheduleRetry = () => {
+      detectFailed.current = true;
+      clearTimeout(autoRetryTimer.current);
+      if (isMounted.current) {
+        autoRetryTimer.current = setTimeout(() => {
+          detectPrinters(undefined, true);
+        }, 5000);
+      }
+    };
 
     try {
       const list = await listQzPrinters();
@@ -80,6 +107,7 @@ export default function AdminSettings({ initialNotes = null, initialPrint = null
       if (!list.length) {
         setPrinters([]);
         setMissingPrinters([]);
+        clearTimeout(autoRetryTimer.current);
         setPrintersError(
           "No printers detected on this computer. Connect a printer and click Refresh Printers."
         );
@@ -97,18 +125,44 @@ export default function AdminSettings({ initialNotes = null, initialPrint = null
         setKitchenPrinter("");
       }
 
+      detectFailed.current = false;
+      clearTimeout(autoRetryTimer.current);
       setPrinters(list);
       setMissingPrinters(missing);
+      setPrintersError("");
     } catch (err) {
       setPrinters([]);
       setMissingPrinters([]);
       setPrintersError(
-        err?.message || "QZ Tray is not running. Open the QZ Tray app and click Retry Connection."
+        (err?.message || "QZ Tray is not running on this computer.") +
+          (silent ? " — retrying automatically…" : "")
       );
+      scheduleRetry();
     } finally {
-      setPrintersLoading(false);
+      detectInFlight.current = false;
+      if (!silent) setPrintersLoading(false);
     }
   };
+
+  /* stop the retry loop when the page closes */
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+      clearTimeout(autoRetryTimer.current);
+    };
+  }, []);
+
+  /* coming back to this tab → try immediately if the last attempt failed */
+  useEffect(() => {
+    const onFocus = () => {
+      if (detectFailed.current && !detectInFlight.current) {
+        detectPrinters(undefined, true);
+      }
+    };
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const didInitialLoad = useRef(!initialNotes);
 
@@ -388,8 +442,9 @@ export default function AdminSettings({ initialNotes = null, initialPrint = null
 
         <p className="text-xs text-gray-400 mt-3">
           Printers are read live from this computer through the QZ Tray desktop
-          app (it must be installed and running). On first use QZ Tray asks for
-          permission to connect.
+          app. While this page is open the connection is established
+          automatically — as soon as QZ Tray is running, available printers
+          appear in the dropdowns above.
         </p>
       </div>
 
