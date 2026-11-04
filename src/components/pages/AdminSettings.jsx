@@ -39,6 +39,9 @@ export default function AdminSettings({ initialNotes = null, initialPrint = null
   const [printersLoading, setPrintersLoading] = useState(false);
   const [printersError, setPrintersError] = useState("");
   const [missingPrinters, setMissingPrinters] = useState([]);
+  /* Chrome 147+ Local Network Access block: "prompt" (needs an Allow
+     click) or "denied" (must be re-enabled in Chrome site settings) */
+  const [lnaBlocked, setLnaBlocked] = useState("");
 
   /* automatic reconnect: while the page is open we keep retrying on our
      own, so printers show up as soon as QZ Tray is reachable — the user
@@ -130,18 +133,42 @@ export default function AdminSettings({ initialNotes = null, initialPrint = null
       setPrinters(list);
       setMissingPrinters(missing);
       setPrintersError("");
+      setLnaBlocked("");
     } catch (err) {
       setPrinters([]);
       setMissingPrinters([]);
+      const lna = err?.lnaBlocked || "";
+      setLnaBlocked(lna);
       setPrintersError(
         (err?.message || "QZ Tray is not running on this computer.") +
-          (silent ? " — retrying automatically…" : "")
+          (silent && lna !== "denied" ? " — retrying automatically…" : "")
       );
-      scheduleRetry();
+      if (lna === "denied") {
+        /* user must change a Chrome setting first — auto-retry is
+           pointless (and repeated attempts risk Chrome auto-blocking) */
+        detectFailed.current = true;
+        clearTimeout(autoRetryTimer.current);
+      } else {
+        scheduleRetry();
+      }
     } finally {
       detectInFlight.current = false;
       if (!silent) setPrintersLoading(false);
     }
+  };
+
+  /* "Allow Access": runs inside a click (user gesture) so Chrome can
+     show the Local Network Access prompt — try the Permissions API
+     first, then connect (the WebSocket attempt itself can prompt too). */
+  const handleAllowAccess = async () => {
+    try {
+      if (navigator.permissions?.request) {
+        await navigator.permissions.request({ name: "loopback-network" });
+      }
+    } catch {
+      /* unsupported → the connection attempt below triggers the prompt */
+    }
+    detectPrinters();
   };
 
   /* stop the retry loop when the page closes */
@@ -325,14 +352,33 @@ export default function AdminSettings({ initialNotes = null, initialPrint = null
         {/* QZ CONNECTION / EMPTY STATE */}
         {printersError && (
           <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 mb-4 text-sm flex flex-wrap items-center justify-between gap-3">
-            <span>{printersError}</span>
+            <span>
+              {printersError}
+              {lnaBlocked === "prompt" && (
+                <>
+                  {" "}
+                  Click <b>Allow Access</b> below, then choose <b>Allow</b> in the
+                  Chrome popup (“Access other apps and services on this device”).
+                  If no popup appears, open Chrome Settings → Site settings →
+                  this site → <b>Loopback network</b> → <b>Allow</b>, then retry.
+                </>
+              )}
+              {lnaBlocked === "denied" && (
+                <>
+                  {" "}
+                  Open Chrome Settings → Site settings → this site →{" "}
+                  <b>Loopback network</b> → <b>Allow</b>, then click Retry
+                  Connection.
+                </>
+              )}
+            </span>
             <button
-              onClick={() => detectPrinters()}
+              onClick={lnaBlocked === "prompt" ? handleAllowAccess : () => detectPrinters()}
               disabled={printersLoading}
               className="shrink-0 flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-sm transition disabled:opacity-60"
             >
               <RefreshCw size={14} className={printersLoading ? "animate-spin" : ""} />
-              Retry Connection
+              {lnaBlocked === "prompt" ? "Allow Access" : "Retry Connection"}
             </button>
           </div>
         )}

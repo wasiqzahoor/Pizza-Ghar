@@ -53,6 +53,7 @@ function friendlyError(err) {
   const msg = String(err?.message || err || "");
   if (!msg) return "QZ Tray printing failed.";
   if (/Printer\s+"|not found|Installed printers/i.test(msg)) return msg;
+  if (/local network access|Chrome (is blocking|blocked)/i.test(msg)) return msg;
   if (/trust|certificate|denied/i.test(msg)) {
     return "QZ Tray connection was not approved. Approve the QZ Tray prompt on this computer and try again.";
   }
@@ -62,6 +63,19 @@ function friendlyError(err) {
     return "QZ Tray is not running on this computer. Open the QZ Tray app and try again.";
   }
   return msg;
+}
+
+/* Chrome 147+ "Local Network Access": a public site cannot reach
+   localhost (QZ Tray) until the user allows it. Query the granular
+   permission (never the legacy combined name) to tell an LNA block
+   apart from QZ Tray simply not running. */
+export async function getLoopbackPermission() {
+  try {
+    const status = await navigator.permissions.query({ name: "loopback-network" });
+    return status.state; /* "granted" | "prompt" | "denied" */
+  } catch {
+    return "unknown"; /* browser without LNA → not the cause */
+  }
 }
 
 /* Silent signed connection: QZ Tray trusts this website without any
@@ -137,10 +151,21 @@ function loadQz() {
 /* Connect to the QZ Tray desktop app (signed → no prompt). */
 async function connectQz() {
   const qz = await loadQz();
-  if (qz.websocket.isConnected()) return qz;
+  /* qz API: isActive() (there is no isConnected()) */
+  if (typeof qz.websocket.isActive === "function" && qz.websocket.isActive()) return qz;
   try {
     await withTimeout(qz.websocket.connect(), 30000, "Connecting to QZ Tray timed out.");
   } catch {
+    const lna = await getLoopbackPermission();
+    if (lna === "prompt" || lna === "denied") {
+      const err = new Error(
+        lna === "denied"
+          ? "Chrome blocked local network access for this site (Loopback network = Block)."
+          : "Chrome is blocking QZ Tray until you allow local network access."
+      );
+      err.lnaBlocked = lna;
+      throw err;
+    }
     throw new Error(
       "QZ Tray is not running or the connection was not approved. Open the QZ Tray app on this computer and try again."
     );
