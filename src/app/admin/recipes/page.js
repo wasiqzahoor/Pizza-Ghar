@@ -1,6 +1,8 @@
 import Recipes from "@/components/pages/Recipes";
 import { getServerToken, callRoute } from "@/lib/server-data";
 
+export const metadata = { title: "Recipes" };
+
 export const dynamic = "force-dynamic";
 
 export default async function Page() {

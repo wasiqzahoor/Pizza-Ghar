@@ -586,10 +586,15 @@ setOrderType("Dine In");
               onClick={() => addToCart(item)}
               className="relative group bg-white rounded-xl shadow cursor-pointer overflow-hidden"
             >
-              <img
-                src={item.image ? imgUrl(item.image) : "/no-image.png"}
-                className="h-40 w-full object-cover"
-              />
+<img
+src={item.image ? imgUrl(item.image) : "/no-image.svg"}
+alt={item.name}
+loading="lazy"
+decoding="async"
+width="600"
+height="400"
+className="h-40 w-full object-cover"
+/>
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center">
                 <div className="bg-orange-500 p-4 rounded-full text-white">
                   <Plus size={28} />

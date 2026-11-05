@@ -17,12 +17,12 @@ export default function RoleSelection() {
         Fast Food Restaurant Management Software
       </div>
 
-      {/* Background Image */}
+      {/* Background */}
       <div
-        className="absolute inset-0 bg-cover bg-center blur-sm brightness-75 "
+        className="absolute inset-0 bg-cover bg-center blur-sm brightness-75"
         style={{
           backgroundImage:
-            "url('https://images.unsplash.com/photo-1555992336-03a23c8b2e3f')",
+            "linear-gradient(135deg, #7f1d1d 0%, #b91c1c 35%, #ea580c 70%, #f59e0b 100%)",
         }}
       />
 

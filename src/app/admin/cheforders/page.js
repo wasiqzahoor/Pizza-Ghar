@@ -1,6 +1,8 @@
 import ChefOrders from "@/components/pages/ChefOrders";
 import { getServerToken, callRoute } from "@/lib/server-data";
 
+export const metadata = { title: "Chef Orders" };
+
 export const dynamic = "force-dynamic";
 
 export default async function Page() {

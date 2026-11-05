@@ -1,6 +1,8 @@
 import AdminUsers from "@/components/pages/AdminUsers";
 import { getServerToken, callRoute } from "@/lib/server-data";
 
+export const metadata = { title: "Users" };
+
 export const dynamic = "force-dynamic";
 
 export default async function Page() {

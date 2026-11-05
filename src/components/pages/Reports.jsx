@@ -2,15 +2,14 @@
 
 import { API_BASE } from "@/config/api";
 import { useEffect, useState, useRef } from "react";
-import {
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Area,
-  AreaChart,
-} from "recharts";
+import dynamic from "next/dynamic";
+
+const RevenueAreaChart = dynamic(() => import("@/components/RevenueAreaChart"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-80 w-full animate-pulse rounded-xl bg-gray-100" />
+  ),
+});
 
 import { Download } from "lucide-react";
 import axios from "axios";
@@ -231,15 +230,7 @@ export default function Reports({ initialStats = null, initialConsumption = null
         <div className="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm">
           <h3 className="text-xl font-semibold mb-6">Revenue Trend</h3>
           <div className="w-full h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats.chart}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Area type="monotone" dataKey="revenue" stroke="#ef4444" fill="#fee2e2" />
-              </AreaChart>
-            </ResponsiveContainer>
+            <RevenueAreaChart data={stats.chart} />
           </div>
         </div>
 

@@ -6,8 +6,15 @@ import { useRouter } from "next/navigation";
 
 import Topbar from "@/components/Topbar";
 import StatCard from "@/components/StatCard";
-import RevenueChart from "@/components/RevenueChart";
+import dynamic from "next/dynamic";
 import useAuthCheck from "@/hooks/useAuthCheck";
+
+const RevenueChart = dynamic(() => import("@/components/RevenueChart"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-64 w-full animate-pulse rounded-xl bg-gray-100" />
+  ),
+});
 
 import {
   TrendingUp,

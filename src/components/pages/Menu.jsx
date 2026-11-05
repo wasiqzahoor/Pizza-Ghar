@@ -279,11 +279,12 @@ className="bg-white rounded-xl shadow hover:shadow-lg transition"
 >
 
 <img
-src={
-item.image
-? imgUrl(item.image)
-: "https://via.placeholder.com/300"
-}
+src={item.image ? imgUrl(item.image) : "/no-image.svg"}
+alt={item.name}
+loading="lazy"
+decoding="async"
+width="600"
+height="400"
 className="h-32 sm:h-40 md:h-48 w-full object-cover rounded-t-xl"
 />
 

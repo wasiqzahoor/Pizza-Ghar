@@ -1,6 +1,8 @@
 import POS from "@/components/pages/POS";
 import { getServerToken, callRoute } from "@/lib/server-data";
 
+export const metadata = { title: "POS" };
+
 export const dynamic = "force-dynamic";
 
 export default async function Page() {

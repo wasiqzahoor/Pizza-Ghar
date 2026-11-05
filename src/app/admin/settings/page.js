@@ -1,6 +1,8 @@
 import AdminSettings from "@/components/pages/AdminSettings";
 import { getServerToken, callRoute } from "@/lib/server-data";
 
+export const metadata = { title: "Settings" };
+
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
