@@ -105,6 +105,13 @@ export default function Orders({ initialOrders = null }) {
     }
   };
 
+  /* Warm the editpos route (RSC + chunks) on hover so the click is instant. */
+  const prefetchModify = (id) => {
+    const role = localStorage.getItem("role");
+    if (role === "admin") router.prefetch(`/admin/editpos/${id}`);
+    else if (role === "cashier") router.prefetch(`/cashier/editpos/${id}`);
+  };
+
   const loadOrders = async () => {
     setLoading(true);
     try {
@@ -758,6 +765,7 @@ export default function Orders({ initialOrders = null }) {
                         <Edit3
                           size={15}
                           className="cursor-pointer text-blue-600"
+                          onMouseEnter={() => prefetchModify(order.id)}
                           onClick={() => handleModify(order.id)}
                         />
                       )}

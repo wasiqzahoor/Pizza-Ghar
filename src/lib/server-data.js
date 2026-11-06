@@ -15,13 +15,13 @@ export async function getServerToken() {
 }
 
 /* Invoke an API route handler's GET directly (no HTTP hop) from a server component. */
-export async function callRoute(loader, pathAndQuery, token) {
+export async function callRoute(loader, pathAndQuery, token, params) {
   try {
     const mod = await loader();
     const req = new Request("http://internal.local" + pathAndQuery, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
-    const res = await mod.GET(req);
+    const res = await mod.GET(req, { params: params || {} });
     if (!res || !res.ok) return null;
     return await res.json();
   } catch (e) {

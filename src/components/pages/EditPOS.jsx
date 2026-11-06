@@ -16,14 +16,24 @@ import { showAlert } from "@/utils/popup";
 import { printHtml } from "@/utils/printWindow";
 import { autoPrintPreflight } from "@/utils/autoPrint";
 
-export default function EditPOS() {
+export default function EditPOS({
+  initialOrder = null,
+  initialProducts = null,
+  initialCategories = null,
+}) {
 
   useAuthCheck();
 
   const role = typeof window !== "undefined" ? localStorage.getItem("role") : null;
 
-  const [menuItems, setMenuItems] = useState([]);
-  const [categories, setCategories] = useState(["All"]);
+  const [menuItems, setMenuItems] = useState(() =>
+    Array.isArray(initialProducts?.rows) ? initialProducts.rows : []
+  );
+  const [categories, setCategories] = useState(() =>
+    initialCategories?.length
+      ? ["All", ...new Set(initialCategories.map((c) => c.name))]
+      : ["All"]
+  );
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [search, setSearch] = useState("");
 
@@ -56,20 +66,38 @@ export default function EditPOS() {
 
   const API = `${API_BASE}/api`;
 
+  /* Skip the mount-time fetches when the server already seeded the data. */
+  const seededOrder = useRef(initialOrder != null);
+  const seededProducts = useRef(initialProducts != null);
+  const seededCategories = useRef(initialCategories != null);
+
   useEffect(() => {
     if (id) {
       setOrderId(id);
-      loadOrder(id);
+      if (seededOrder.current) {
+        seededOrder.current = false;
+        applyOrder(initialOrder);
+      } else {
+        loadOrder(id);
+      }
     }
   }, [id]);
 
   /* ================= LOAD PRODUCTS ================= */
 
   useEffect(() => {
+    if (seededCategories.current) {
+      seededCategories.current = false;
+      return;
+    }
     loadCategories();
   }, []);
 
   useEffect(() => {
+    if (seededProducts.current) {
+      seededProducts.current = false;
+      return;
+    }
     const t = setTimeout(
       () => loadProducts(search, selectedCategory),
       search ? 300 : 0
@@ -96,11 +124,36 @@ export default function EditPOS() {
 
   /* ================= LOAD EXISTING ORDER ================= */
 
+  const applyOrder = (data) => {
+    setLoadedOrderId(data.id);
+    setCustomerName(data.customerName);
+    setOrderType(data.orderType);
+    setPaymentMethod(data.paymentMethod);
+    setBillStatus(data.billStatus);
+
+    const phone = data.customerPhone || data.customer_phone || "";
+    const addr = data.address || data.delivery_address || "";
+
+    setCustomerPhone(phone);
+    setAddress(addr);
+    setOrderDescription(data.orderDescription || "");
+
+    setShowPhoneField(!!phone);
+    setShowAddressField(!!addr);
+
+    setCart(
+      (data.items || []).map(i => ({
+        id: i.id || Math.random(),
+        name: i.name,
+        price: Number(i.price),
+        qty: Number(i.qty)
+      }))
+    );
+  };
+
   const loadOrder = async (idParam) => {
     const idToUse =
       (typeof idParam === "object" ? idParam?.id : idParam) || orderId;
-
-    console.log("ID TO USE:", idToUse);
 
     if (!idToUse) {
       showAlert("Enter Order ID", "warning");
@@ -112,32 +165,7 @@ export default function EditPOS() {
         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
       });
 
-      const data = res.data;
-
-      setLoadedOrderId(data.id);
-      setCustomerName(data.customerName);
-      setOrderType(data.orderType);
-      setPaymentMethod(data.paymentMethod);
-      setBillStatus(data.billStatus);
-
-      const phone = data.customerPhone || data.customer_phone || "";
-      const addr = data.address || data.delivery_address || "";
-
-      setCustomerPhone(phone);
-      setAddress(addr);
-      setOrderDescription(data.orderDescription || "");
-
-      setShowPhoneField(!!phone);
-      setShowAddressField(!!addr);
-
-      setCart(
-        data.items.map(i => ({
-          id: i.id || Math.random(),
-          name: i.name,
-          price: Number(i.price),
-          qty: Number(i.qty)
-        }))
-      );
+      applyOrder(res.data);
 
     } catch (err) {
       console.log(err);
