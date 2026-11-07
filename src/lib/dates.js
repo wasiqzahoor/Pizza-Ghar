@@ -48,11 +48,13 @@ export function zonedToUtc(y, m, d, h = 0, mi = 0, s = 0) {
 }
 
 export function dayName(date) {
-  return DAY_NAMES[new Date(date).getDay()];
+  const p = tzParts(date);
+  return DAY_NAMES[new Date(Date.UTC(p.year, p.month - 1, p.day)).getUTCDay()];
 }
 
 export function monthName(date) {
-  return MONTH_NAMES[new Date(date).getMonth()];
+  const p = tzParts(date);
+  return MONTH_NAMES[p.month - 1];
 }
 
 /* "YYYY-MM-DD" in server TZ */

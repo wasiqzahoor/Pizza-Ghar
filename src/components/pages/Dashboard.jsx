@@ -26,6 +26,16 @@ import {
 const fmtChart = (chart) =>
   (chart || []).map((item) => ({ name: item.label, revenue: item.total }));
 
+const pctText = (p) =>
+  p === null || p === undefined ? "—" : `${p >= 0 ? "+" : ""}${p}%`;
+
+const pctColor = (p) =>
+  p === null || p === undefined
+    ? "text-gray-400"
+    : p >= 0
+      ? "text-green-500"
+      : "text-red-500";
+
 const defaultStats = {
   totalSales:0,
   totalOrders:0,
@@ -157,16 +167,16 @@ return(
 <StatCard
 title="Total Sales "
 value={`Rs ${stats.totalSales}`}
-change="+12.5%"
-changeColor="text-green-500"
+change={pctText(stats.trends?.sales)}
+changeColor={pctColor(stats.trends?.sales)}
 icon={<TrendingUp className="text-red-500"/>}
 />
 
 <StatCard
 title="Total Orders"
 value={stats.totalOrders}
-change="+8.2%"
-changeColor="text-green-500"
+change={pctText(stats.trends?.orders)}
+changeColor={pctColor(stats.trends?.orders)}
 icon={<ShoppingBag className="text-orange-500"/>}
 />
 
@@ -181,8 +191,8 @@ icon={<AlertCircle className="text-red-500"/>}
 <StatCard
 title="New Customers"
 value={stats.newCustomers}
-change="+2.4%"
-changeColor="text-green-500"
+change={pctText(stats.trends?.customers)}
+changeColor={pctColor(stats.trends?.customers)}
 icon={<Users className="text-blue-500"/>}
 />
 
