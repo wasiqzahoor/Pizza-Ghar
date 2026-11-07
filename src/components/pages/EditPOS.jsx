@@ -342,7 +342,7 @@ export default function EditPOS({
       font-family: monospace;
       padding: 8px;
       overflow-wrap: anywhere;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: bold;
       color: #000;
     }
@@ -352,7 +352,7 @@ export default function EditPOS({
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 13px;
+      font-size: 12px;
     }
     table.items { table-layout: fixed; }
     table.items th:nth-child(1), table.items td:nth-child(1) { width: 52%; overflow-wrap: anywhere; }
@@ -364,11 +364,11 @@ export default function EditPOS({
     }
     th {
       border-bottom: 2px solid #000;
-      font-size: 14px;
+      font-size: 13px;
     }
     .right { text-align: right; }
-    .total { font-weight: bold; font-size: 17px; }
-    .small { font-size: 12px; }
+    .total { font-weight: bold; font-size: 15px; }
+    .small { font-size: 11px; }
     img.logo {
       max-width: 70mm;
       margin-bottom: 6px;
@@ -382,7 +382,7 @@ export default function EditPOS({
     <img src="${logo}" class="logo" alt="Pizza Ghar Logo" />
   </div>
 
-  <div class="center bold" style="font-size:22px; letter-spacing:1px;">PIZZA GHAR</div>
+  <div class="center bold" style="font-size:20px; letter-spacing:1px;">PIZZA GHAR</div>
   <div class="center small">Orders @ 0330-5278777</div>
 
   <div class="line"></div>
@@ -463,11 +463,11 @@ export default function EditPOS({
 
   <div class="line"></div>
 
-  <div class="center bold" style="font-size:17px;">
+  <div class="center bold" style="font-size:15px;">
     (*** BILL / ${data.billStatus.toUpperCase()} ***)
   </div>
 
-  <div class="center bold" style="font-size:15px;">
+  <div class="center bold" style="font-size:13px;">
     Thank You For Visiting
   </div>
 
