@@ -274,10 +274,12 @@ setOrderType("Dine In");
       font-family: monospace;
       padding: 8px;
       font-size: 13px;
+      font-weight: bold;
+      color: #000;
     }
     .center { text-align: center; }
     .bold { font-weight: bold; }
-    .line { border-top: 1px dashed #000; margin: 6px 0; }
+    .line { border-top: 2px dashed #000; margin: 6px 0; }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -287,10 +289,11 @@ setOrderType("Dine In");
       padding: 2px 0;
     }
     th {
-      border-bottom: 1px solid #000;
+      border-bottom: 2px solid #000;
+      font-size: 14px;
     }
     .right { text-align: right; }
-    .total { font-weight: bold; font-size: 15px; }
+    .total { font-weight: bold; font-size: 17px; }
     .small { font-size: 12px; }
     img.logo {
       max-width: 70mm;
@@ -305,7 +308,7 @@ setOrderType("Dine In");
     <img src="/logo.jpeg" class="logo" alt="Pizza Ghar Logo" />
   </div>
 
-  <div class="center bold">PIZZA GHAR</div>
+  <div class="center bold" style="font-size:22px; letter-spacing:1px;">PIZZA GHAR</div>
   <div class="center small">Orders @ 0330-5278777</div>
 
   <div class="line"></div>
@@ -384,11 +387,11 @@ setOrderType("Dine In");
 
   <div class="line"></div>
 
-  <div class="center bold">
+  <div class="center bold" style="font-size:17px;">
     (*** BILL / ${data.billStatus.toUpperCase()} ***)
   </div>
 
-  <div class="center bold">
+  <div class="center bold" style="font-size:15px;">
     Thank You For Visiting
   </div>
 
@@ -459,17 +462,19 @@ setOrderType("Dine In");
       font-family: monospace;
       padding: 8px;
       font-size: 13px;
+      font-weight: bold;
+      color: #000;
     }
     .center { text-align: center; }
     .bold { font-weight: bold; }
-    .line { border-top: 1px dashed #000; margin: 6px 0; }
+    .line { border-top: 2px dashed #000; margin: 6px 0; }
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
     }
     th, td { padding: 2px 0; }
-    th { border-bottom: 1px solid #000; }
+    th { border-bottom: 2px solid #000; font-size: 14px; }
     .right { text-align: right; }
     .small { font-size: 12px; }
     img.logo {
@@ -481,11 +486,11 @@ setOrderType("Dine In");
 
 <body>
 
-   <div class="center bold" style="font-size:18px;">
+   <div class="center bold" style="font-size:20px;">
     INVOICE #${data.invoiceNo}
   </div>
 
-  <div class="center bold">( PIZZA GHAR KITCHEN SLIP )</div>
+  <div class="center bold" style="font-size:16px;">( PIZZA GHAR KITCHEN SLIP )</div>
 
   <div class="line"></div>
 
@@ -523,11 +528,11 @@ setOrderType("Dine In");
 
   <div class="line"></div>
 
-  <div class="center bold">
+  <div class="center bold" style="font-size:17px;">
     (*** Preparing : 20 minutes ***)
   </div>
 
-  <div class="center bold">
+  <div class="center bold" style="font-size:15px;">
     Thank You
   </div>
 

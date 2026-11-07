@@ -149,17 +149,19 @@ const handlePrint = async (order) => {
       font-family: monospace;
       padding: 8px;
       font-size: 13px;
+      font-weight: bold;
+      color: #000;
     }
     .center { text-align: center; }
     .bold { font-weight: bold; }
-    .line { border-top: 1px dashed #000; margin: 6px 0; }
+    .line { border-top: 2px dashed #000; margin: 6px 0; }
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
     }
     th, td { padding: 2px 0; }
-    th { border-bottom: 1px solid #000; }
+    th { border-bottom: 2px solid #000; font-size: 14px; }
     .right { text-align: right; }
     .small { font-size: 12px; }
     img.logo {
@@ -171,11 +173,11 @@ const handlePrint = async (order) => {
 
 <body>
 
- <div class="center bold" style="font-size:18px;">
+ <div class="center bold" style="font-size:20px;">
     INVOICE #${order.id}
   </div>
 
-  <div class="center bold">( PIZZA GHAR KITCHEN SLIP )</div>
+  <div class="center bold" style="font-size:16px;">( PIZZA GHAR KITCHEN SLIP )</div>
 
   <div class="line"></div>
 <div>Date: ${order.date || ""}</div>
@@ -210,11 +212,11 @@ ${order.description ? `<div class="bold">NOTE: ${order.description}</div>` : ""}
 
   <div class="line"></div>
 
-  <div class="center bold">
+  <div class="center bold" style="font-size:17px;">
     (*** ${order.status?.toUpperCase()}  : 20 minutes ***)
   </div>
 
-  <div class="center bold">
+  <div class="center bold" style="font-size:15px;">
     Thank You
   </div>
 
