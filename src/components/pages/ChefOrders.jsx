@@ -146,8 +146,10 @@ const handlePrint = async (order) => {
     @page { size: 80mm auto; margin: 0; }
     body {
       width: 80mm;
+      box-sizing: border-box;
       font-family: monospace;
       padding: 8px;
+      overflow-wrap: anywhere;
       font-size: 13px;
       font-weight: bold;
       color: #000;
@@ -160,6 +162,9 @@ const handlePrint = async (order) => {
       border-collapse: collapse;
       font-size: 13px;
     }
+    table.items { table-layout: fixed; }
+    table.items th:nth-child(1), table.items td:nth-child(1) { width: 78%; overflow-wrap: anywhere; }
+    table.items th:nth-child(2), table.items td:nth-child(2) { width: 22%; }
     th, td { padding: 2px 0; }
     th { border-bottom: 2px solid #000; font-size: 14px; }
     .right { text-align: right; }
@@ -188,7 +193,7 @@ ${order.description ? `<div class="bold">NOTE: ${order.description}</div>` : ""}
 
   <div class="line"></div>
 
-  <table>
+  <table class="items">
     <thead>
       <tr>
         <th>Item</th>

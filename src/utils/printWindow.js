@@ -2,6 +2,30 @@
 
 import { getPrintSettings, qzPrintReceipt } from "./autoPrint";
 
+let logoCache = null;
+
+/* Receipt logo as a data: URI. The QZ HTML renderer has no page origin, so
+   the site-relative "/logo.jpeg" path breaks there (only the alt text prints).
+   Embedding the image directly works on every path (QZ / popup / iframe);
+   fetch once and reuse for the session. */
+export async function receiptLogo() {
+  if (logoCache) return logoCache;
+  try {
+    const res = await fetch("/logo.jpeg");
+    if (!res.ok) throw new Error("logo fetch failed");
+    const blob = await res.blob();
+    logoCache = await new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onload = () => resolve(fr.result);
+      fr.onerror = () => reject(fr.error);
+      fr.readAsDataURL(blob);
+    });
+  } catch {
+    logoCache = `${window.location.origin}/logo.jpeg`;
+  }
+  return logoCache;
+}
+
 /* Print helper — hands print() over to the RECEIPT POPUP's own JS context.
    window.print() is synchronous: calling it from the main app thread freezes
    the whole app ("Not Responding") until the print dialog closes. Running it

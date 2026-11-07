@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import useAuthCheck from "@/hooks/useAuthCheck";
 import { showAlert } from "@/utils/popup";
-import { printHtml } from "@/utils/printWindow";
+import { printHtml, receiptLogo } from "@/utils/printWindow";
 import { autoPrintPreflight } from "@/utils/autoPrint";
 import { imgUrl } from "@/lib/img";
 
@@ -250,7 +250,7 @@ setOrderType("Dine In");
 
   /* ================= PRINT ================= */
 
-  const printThermalReceipt = () => {
+  const printThermalReceipt = async () => {
     if (isPrinting) return;
     setIsPrinting(true);
 
@@ -262,6 +262,7 @@ setOrderType("Dine In");
 
     const totalQty = data.items.reduce((a, b) => a + b.qty, 0);
     const totalItems = data.items.length;
+    const logo = await receiptLogo();
 
     const html = `<!DOCTYPE html>
 <html>
@@ -271,8 +272,10 @@ setOrderType("Dine In");
     @page { size: 80mm auto; margin: 0; }
     body {
       width: 80mm;
+      box-sizing: border-box;
       font-family: monospace;
       padding: 8px;
+      overflow-wrap: anywhere;
       font-size: 13px;
       font-weight: bold;
       color: #000;
@@ -285,6 +288,11 @@ setOrderType("Dine In");
       border-collapse: collapse;
       font-size: 13px;
     }
+    table.items { table-layout: fixed; }
+    table.items th:nth-child(1), table.items td:nth-child(1) { width: 52%; overflow-wrap: anywhere; }
+    table.items th:nth-child(2), table.items td:nth-child(2) { width: 17%; }
+    table.items th:nth-child(3), table.items td:nth-child(3) { width: 11%; }
+    table.items th:nth-child(4), table.items td:nth-child(4) { width: 20%; }
     th, td {
       padding: 2px 0;
     }
@@ -305,7 +313,7 @@ setOrderType("Dine In");
 <body>
 
   <div class="center">
-    <img src="/logo.jpeg" class="logo" alt="Pizza Ghar Logo" />
+    <img src="${logo}" class="logo" alt="Pizza Ghar Logo" />
   </div>
 
   <div class="center bold" style="font-size:22px; letter-spacing:1px;">PIZZA GHAR</div>
@@ -333,7 +341,7 @@ setOrderType("Dine In");
 
   <div class="line"></div>
 
-  <table>
+  <table class="items">
     <thead>
       <tr>
         <th>Item</th>
@@ -459,8 +467,10 @@ setOrderType("Dine In");
     @page { size: 80mm auto; margin: 0; }
     body {
       width: 80mm;
+      box-sizing: border-box;
       font-family: monospace;
       padding: 8px;
+      overflow-wrap: anywhere;
       font-size: 13px;
       font-weight: bold;
       color: #000;
@@ -473,6 +483,9 @@ setOrderType("Dine In");
       border-collapse: collapse;
       font-size: 13px;
     }
+    table.items { table-layout: fixed; }
+    table.items th:nth-child(1), table.items td:nth-child(1) { width: 78%; overflow-wrap: anywhere; }
+    table.items th:nth-child(2), table.items td:nth-child(2) { width: 22%; }
     th, td { padding: 2px 0; }
     th { border-bottom: 2px solid #000; font-size: 14px; }
     .right { text-align: right; }
@@ -504,7 +517,7 @@ setOrderType("Dine In");
 
   <div class="line"></div>
 
-  <table>
+  <table class="items">
     <thead>
       <tr>
         <th>Item</th>
